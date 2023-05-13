@@ -15,8 +15,8 @@ config.update("jax_enable_x64", True)
 initial_conditions = [0., 1.]
 a = [0.1, 0.2, 0.3]
 tmin = 0
-tmax = 0.1
-nt = 10
+tmax = 3
+nt = 50
 delta = 1e-5
 
 # Define the system of equations
@@ -80,9 +80,9 @@ diff_w_scipy_torch = np.linalg.norm(w_scipy.T - w_torch)
 diff_w_scipy_jax = np.linalg.norm(w_scipy.T - w_jax)
 diff_w_torch_jax = np.linalg.norm(w_torch - w_jax)
 
-print(f"Difference between Scipy and PyTorch solutions: {diff_w_scipy_torch:.6f}")
-print(f"Difference between Scipy and JAX solutions: {diff_w_scipy_jax:.6f}")
-print(f"Difference between PyTorch and JAX solutions: {diff_w_torch_jax:.6f}")
+print(f"Difference between Scipy and PyTorch solutions: {diff_w_scipy_torch:.4e}")
+print(f"Difference between Scipy and JAX solutions: {diff_w_scipy_jax:.4e}")
+print(f"Difference between PyTorch and JAX solutions: {diff_w_torch_jax:.4e}")
 
 # Plot trajectories
 plt.figure(figsize=(10, 6))
@@ -96,7 +96,6 @@ plt.xlabel('Time')
 plt.ylabel('Values')
 plt.title('Trajectories of x and y')
 plt.legend()
-plt.show()
 
 # Compute and plot Jacobians
 Jacobian_scipy = np.empty((2, len(a)))
@@ -133,18 +132,18 @@ Jacobian_jax = Jacobian_jax_fn(a_jax)
 elapsed_time_jacobian_jax = time.time() - start_time
 
 # Print elapsed times for Jacobian calculations
-print(f"Scipy Jacobian computation time: {elapsed_time_jacobian_scipy:.6f} seconds")
-print(f"PyTorch Jacobian computation time: {elapsed_time_jacobian_torch:.6f} seconds")
-print(f"JAX Jacobian computation time: {elapsed_time_jacobian_jax:.6f} seconds")
+print(f"Scipy Jacobian computation time: {elapsed_time_jacobian_scipy:.4e} seconds")
+print(f"PyTorch Jacobian computation time: {elapsed_time_jacobian_torch:.4e} seconds")
+print(f"JAX Jacobian computation time: {elapsed_time_jacobian_jax:.4e} seconds")
 
 # Compute differences between Scipy, PyTorch, and JAX Jacobians
 diff_jacobian_scipy_torch = np.linalg.norm(Jacobian_scipy - Jacobian_torch)
 diff_jacobian_scipy_jax = np.linalg.norm(Jacobian_scipy - Jacobian_jax)
 diff_jacobian_torch_jax = np.linalg.norm(Jacobian_torch - Jacobian_jax)
 
-print(f"Difference between Scipy and PyTorch Jacobians: {diff_jacobian_scipy_torch:.6f}")
-print(f"Difference between Scipy and JAX Jacobians: {diff_jacobian_scipy_jax:.6f}")
-print(f"Difference between PyTorch and JAX Jacobians: {diff_jacobian_torch_jax:.6f}")
+print(f"Difference between Scipy and PyTorch Jacobians: {diff_jacobian_scipy_torch:.4e}")
+print(f"Difference between Scipy and JAX Jacobians: {diff_jacobian_scipy_jax:.4e}")
+print(f"Difference between PyTorch and JAX Jacobians: {diff_jacobian_torch_jax:.4e}")
 
 # Plot Jacobians
 plt.figure(figsize=(10, 6))
