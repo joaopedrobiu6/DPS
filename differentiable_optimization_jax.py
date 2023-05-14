@@ -1,9 +1,8 @@
 import os
 import time
-import jax
 import jax.numpy as jnp
 import numpy as np
-from jax import grad, jit, vmap, value_and_grad
+from jax import jit, value_and_grad
 import optax
 from jax.experimental.ode import odeint
 from pathlib import Path
@@ -24,11 +23,11 @@ def main(results_path='results'):
     t = jnp.linspace(0.0, 1, 100).astype(jnp.float32)
 
     # Initial parameters
-    params = jnp.array([0.1, 0.2])
+    initial_params = jnp.array([0.1, 0.2])
 
     # Optimizer
     optimizer = optax.adam(1e-3)
-    optimizer_state = optimizer.init(params)
+    optimizer_state = optimizer.init(initial_params)
 
     # Define loss function and its gradient
     @jit
@@ -45,6 +44,7 @@ def main(results_path='results'):
 
     # Optimization loop
     start_time = time.time()
+    params = initial_params
     for i in range(1000):
         loss, grads = loss_grad_fn(params)
         updates, optimizer_state = optimizer.update(grads, optimizer_state)
@@ -68,7 +68,7 @@ def main(results_path='results'):
     plt.plot(losses)
     plt.xlabel('Iteration')
     plt.ylabel('Loss')
-    plt.title(f'Initial Parameters: {params}, Final Parameters: {params}')
+    plt.title(f'Initial Parameters: {initial_params}, Final Parameters: {params}')
     plt.savefig(os.path.join(results_path, 'differentiable_opt_convergence.png'))
 
     # Print optimization time
@@ -81,7 +81,7 @@ def main(results_path='results'):
     plt.plot(t, final_state[:, 1], label='y (Final)')
 
     # Compute the initial state using the initial `a` values
-    initial_state = odeint(lambda y, t: ODEFunc(params, t, y), initial_conditions, t)
+    initial_state = odeint(lambda y, t: ODEFunc(initial_params, t, y), initial_conditions, t)
     plt.plot(t, initial_state[:, 0], '--', label='x (Initial)')
     plt.plot(t, initial_state[:, 1], '--', label='y (Initial)')
 

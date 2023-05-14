@@ -7,20 +7,24 @@ from torchdiffeq import odeint as torch_odeint
 import torch
 import torchode as to
 from jax.experimental.ode import odeint as jax_odeint
-from params_and_model import system, ODEFunc, initial_conditions, a, tmin, tmax, nt
+from params_and_model import system, ODEFunc, initial_conditions, a as a_initial, tmin, tmax, nt
 
 # Solve the ODE using Scipy
-def solve_with_scipy():
+def solve_with_scipy(a=None):
     t = np.linspace(tmin, tmax, nt)
     # sol = solve_ivp(lambda t, w: system(w, t, a), [tmin, tmax], initial_conditions, t_eval=t, method='RK45')
     # return sol.y
+    if a is not None:
+        a = a
+    else:
+        a=a_initial
     sol = odeint(lambda w, t: system(w, t, a), initial_conditions, t)
     return sol.T  # note that odeint returns the transpose of the solution compared to solve_ivp
 
 # Solve the ODE using PyTorch
 def solve_with_pytorch():
     initial_conditions_torch = torch.tensor(initial_conditions, requires_grad=True)
-    a_torch = torch.tensor(a, requires_grad=True)
+    a_torch = torch.tensor(a_initial, requires_grad=True)
     t_torch = torch.linspace(tmin, tmax, nt)
     solution_torch = torch_odeint(ODEFunc(a_torch), initial_conditions_torch, t_torch, method='rk4')#.detach().numpy()
     return solution_torch
@@ -44,9 +48,12 @@ def solve_with_pytorch():
 #     return sol.ys.detach().numpy()
 
 # Solve the ODE using JAX
-def solve_with_jax():
+def solve_with_jax(a=None):
     initial_conditions_jax = jnp.array(initial_conditions, dtype=jnp.float64)
-    a_jax = jnp.array(a, dtype=jnp.float64)
+    if a is not None:
+        a_jax = jnp.array(a, dtype=jnp.float64)
+    else:
+        a_jax = jnp.array(a_initial, dtype=jnp.float64)
     t_jax = jnp.linspace(tmin, tmax, nt)
     system_jit = jit(system)
     solution_jax = jax_odeint(system_jit, initial_conditions_jax, t_jax, a_jax) # already uses a RK4 method
