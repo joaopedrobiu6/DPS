@@ -7,7 +7,7 @@ from solver import solve_with_scipy, solve_with_pytorch, solve_with_jax
 from jacobi import compute_jacobian_scipy, compute_jacobian_torch, compute_jacobian_jax
 from differences import compute_diff
 from params_and_model import initial_conditions
-from params_and_model import tmin, tmax, nt, a
+from params_and_model import tmin, tmax, nt, a_initial
 from jax.config import config
 config.update("jax_enable_x64", True)
 
@@ -34,7 +34,7 @@ def main(results_path='results'):
     for w_i, label, ls in zip(w, labels, label_styles):
         for i, func in enumerate(functions):
             if label == 'Scipy':
-                plt.plot(t, w_i[i], ls[0], label=f'{label} {func}')
+                plt.plot(t, w_i[:, i], ls[0], label=f'{label} {func}')
             elif label == 'PyTorch':
                 plt.plot(t, w_i[:, i].detach().numpy(), ls[0], label=f'{label} {func}')
             else:
@@ -44,12 +44,12 @@ def main(results_path='results'):
     plt.title('ODE Solutions')
     plt.legend()
     plt.tight_layout()
-    plt.savefig(os.path.join(results_path, 'solutions_timetrace.png'))
+    plt.savefig(os.path.join(results_path, 'initial_solution_timetrace.png'))
 
     plt.figure()
     for Jacobian_i, label, ls in zip(Jacobian, labels, label_styles):
         for i, func in enumerate(functions):
-            plt.plot(a, Jacobian_i[i, :], ls[1], label=f'{label} Jacobian {func}', markersize=10)
+            plt.plot(a_initial, Jacobian_i[i, :], ls[1], label=f'{label} Jacobian {func}', markersize=10)
     plt.xlabel('Parameter a')
     plt.ylabel('Jacobian Value')
     plt.title('Jacobians with respect to a')
@@ -82,7 +82,7 @@ def main(results_path='results'):
     plt.title('x1 vs x2 vs x3')
     plt.legend()
     plt.tight_layout()
-    plt.savefig(os.path.join(results_path, 'solution_3D.png'))
+    plt.savefig(os.path.join(results_path, 'initial_solution_3D.png'))
 
     plt.show()
 

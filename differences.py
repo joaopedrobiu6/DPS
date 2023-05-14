@@ -12,8 +12,8 @@ def compute_diff():
     Jacobian_torch = compute_jacobian_torch()
     Jacobian_jax = compute_jacobian_jax()
 
-    diff_w_scipy_torch = np.linalg.norm(w_scipy.T - w_torch) / np.linalg.norm(w_scipy)
-    diff_w_scipy_jax = np.linalg.norm(w_scipy.T - w_jax) / np.linalg.norm(w_scipy)
+    diff_w_scipy_torch = np.linalg.norm(w_scipy - w_torch) / np.linalg.norm(w_scipy)
+    diff_w_scipy_jax = np.linalg.norm(w_scipy - w_jax) / np.linalg.norm(w_scipy)
     diff_w_torch_jax = np.linalg.norm(w_torch - w_jax) / np.linalg.norm(w_torch)
 
     diff_jacobian_scipy_torch = np.linalg.norm(Jacobian_scipy - Jacobian_torch) / np.linalg.norm(Jacobian_scipy)
