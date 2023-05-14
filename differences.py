@@ -20,4 +20,10 @@ def compute_diff():
     diff_jacobian_scipy_jax = np.linalg.norm(Jacobian_scipy - Jacobian_jax)
     diff_jacobian_torch_jax = np.linalg.norm(Jacobian_torch - Jacobian_jax)
 
-    return diff_w_scipy_torch, diff_w_scipy_jax, diff_w_torch_jax, diff_jacobian_scipy_torch, diff_jacobian_scipy_jax, diff_jacobian_torch_jax
+    diffs = {
+        "scipy-torch": (diff_w_scipy_torch, diff_jacobian_scipy_torch),
+        "scipy-jax": (diff_w_scipy_jax, diff_jacobian_scipy_jax),
+        "torch-jax": (diff_w_torch_jax, diff_jacobian_torch_jax),
+    }
+
+    return diffs

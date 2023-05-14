@@ -7,10 +7,12 @@ from torchdiffeq import odeint
 from jax.experimental.ode import odeint as jax_odeint
 from params_and_model import system, ODEFunc, initial_conditions, a, tmin, tmax, nt, delta
 
+num_functions = len(initial_conditions)  # assuming number of functions is the same as the length of initial conditions
+
 # Compute Scipy Jacobians
 def compute_jacobian_scipy():
     t = np.linspace(tmin, tmax, nt)
-    Jacobian_scipy = np.empty((2, len(a)))
+    Jacobian_scipy = np.empty((num_functions, len(a)))
     for i in range(len(a)):
         a_plus_delta = a.copy()
         a_plus_delta[i] += delta

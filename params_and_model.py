@@ -2,21 +2,24 @@ import jax.numpy as jnp
 import torch
 
 # Parameters and initial conditions
-initial_conditions = [0., 1.]
-a = [0.1, 0.2, 0.3]
+initial_conditions = [5., 5., 5.]
+a = [10, 20, 8/3] # sigma, rho, beta
 tmin = 0
-tmax = 3
-nt = 50
+tmax = 10
+nt = 500
 delta = 1e-5
 
 # Define the system of equations
-def B(a, x, y):
-    return a[0] + a[1] * x + y * a[2] ** 2
+def B(a, x, y, z):
+    return a[0] + a[1] * x + y * a[2] ** 2 + z
 
 def system(w, t, a):
-    x, y = w
-    B_val = B(a, x, y)
-    return [x + y * B_val, x - y * 2 * B_val]
+    x, y, z = w
+    # B_val = B(a, x, y, z)
+    dxdt = a[0]*(y-x)
+    dydt = x*(a[1]-z)-y
+    dzdt = x*y-a[2]*z
+    return [dxdt, dydt, dzdt]
 
 class ODEFunc(torch.nn.Module):
     def __init__(self, a):
@@ -24,8 +27,9 @@ class ODEFunc(torch.nn.Module):
         self.a = a
 
     def forward(self, t, w):
-        x, y = w[..., 0], w[..., 1]
-        B_val = self.a[0] + self.a[1] * x + y * self.a[2] ** 2
-        dxdt = x + y * B_val
-        dydt = x - y * 2 * B_val
-        return torch.stack([dxdt, dydt], dim=-1)
+        x, y, z = w[..., 0], w[..., 1], w[..., 2]
+        # B_val = self.a[0] + self.a[1] * x + y * self.a[2] ** 2 + z
+        dxdt = self.a[0]*(y-x)
+        dydt = x*(self.a[1]-z)-y
+        dzdt = x*y-self.a[2]*z
+        return torch.stack([dxdt, dydt, dzdt], dim=-1)

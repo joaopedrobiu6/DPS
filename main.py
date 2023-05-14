@@ -1,75 +1,104 @@
+import os
 import time
-import matplotlib.pyplot as plt
 import numpy as np
+from pathlib import Path
+import matplotlib.pyplot as plt
 from solver import solve_with_scipy, solve_with_pytorch, solve_with_jax
 from jacobi import compute_jacobian_scipy, compute_jacobian_torch, compute_jacobian_jax
 from differences import compute_diff
+from params_and_model import initial_conditions
 from params_and_model import tmin, tmax, nt, a
 from jax.config import config
-
 config.update("jax_enable_x64", True)
 
 solvers = [solve_with_scipy, solve_with_pytorch, solve_with_jax]
 jacobi_computers = [compute_jacobian_scipy, compute_jacobian_torch, compute_jacobian_jax]
 labels = ["Scipy", "PyTorch", "JAX"]
+label_styles = [['r-','r*'], ['b--','bx'], ['k-.','ko']]
+num_functions = len(initial_conditions)
+functions = [f"x{i+1}" for i in range(num_functions)]
 
 def compute_and_time(func):
     start = time.time()
     result = func()
     return result, time.time() - start
 
-def main():
+def main(results_path='results'):
     w, times_solve = zip(*[compute_and_time(solver) for solver in solvers])
     Jacobian, times_jacobi = zip(*[compute_and_time(jacobian) for jacobian in jacobi_computers])
     times = [time_solve + time_jacobi for time_solve, time_jacobi in zip(times_solve, times_jacobi)]
-    diff_w_scipy_torch, diff_w_scipy_jax, diff_w_torch_jax, diff_jacobian_scipy_torch, diff_jacobian_scipy_jax, diff_jacobian_torch_jax = compute_diff()
-
-    diffs = {
-        "Scipy-PyTorch": [diff_w_scipy_torch, diff_jacobian_scipy_torch],
-        "Scipy-JAX": [diff_w_scipy_jax, diff_jacobian_scipy_jax],
-        "PyTorch-JAX": [diff_w_torch_jax, diff_jacobian_torch_jax]
-    }
+    diffs = compute_diff()
 
     t = np.linspace(tmin, tmax, nt)
 
-    plt.figure(figsize=(10, 6))
-    for w_i, label in zip(w, labels):
-        if label == 'Scipy':
-            plt.plot(t, w_i[0], label=f'{label} x')
-            plt.plot(t, w_i[1], label=f'{label} y')
-        else:
-            plt.plot(t, w_i[:, 0], label=f'{label} x')
-            plt.plot(t, w_i[:, 1], label=f'{label} y')
+    plt.figure()
+    for w_i, label, ls in zip(w, labels, label_styles):
+        for i, func in enumerate(functions):
+            if label == 'Scipy':
+                plt.plot(t, w_i[i], ls[0], label=f'{label} {func}')
+            else:
+                plt.plot(t, w_i[:, i], ls[0], label=f'{label} {func}')
     plt.xlabel('Time')
     plt.ylabel('Solution Value')
     plt.title('ODE Solutions')
     plt.legend()
+    plt.tight_layout()
+    plt.savefig(os.path.join(results_path, 'solutions_timetrace.png'))
 
-    plt.figure(figsize=(10, 6))
-    for Jacobian_i, label in zip(Jacobian, labels):
-        plt.plot(a, Jacobian_i[0, :], label=f'{label} Jacobian x')
-        plt.plot(a, Jacobian_i[1, :], label=f'{label} Jacobian y')
+    plt.figure()
+    for Jacobian_i, label, ls in zip(Jacobian, labels, label_styles):
+        for i, func in enumerate(functions):
+            plt.plot(a, Jacobian_i[i, :], ls[1], label=f'{label} Jacobian {func}')
     plt.xlabel('Parameter a')
     plt.ylabel('Jacobian Value')
     plt.title('Jacobians with respect to a')
     plt.legend()
+    plt.tight_layout()
+    plt.savefig(os.path.join(results_path, 'jacobians_a.png'))
 
-    plt.figure(figsize=(10, 6))
-    plt.bar(labels, times)
+    plt.figure()
+    p1 = plt.bar(labels, times_solve, label='Solving ODE')
+    p2 = plt.bar(labels, times_jacobi, bottom=times_solve, label='Computing Jacobian')
     plt.xlabel('Library')
     plt.ylabel('Time (s)')
+    plt.tight_layout()
     plt.title('Time taken for solving ODE and computing Jacobian')
+    plt.legend()
+    plt.savefig(os.path.join(results_path, 'time_solveJacobian.png'))
+
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+    for w_i, label, ls in zip(w, labels, label_styles):
+        if label == 'Scipy':
+            ax.plot(w_i[0], w_i[1], w_i[2], ls[0], label=f'{label}')
+        else:
+            ax.plot(w_i[:, 0], w_i[:, 1], w_i[:, 2], ls[0], label=f'{label}')
+    ax.set_xlabel('x1')
+    ax.set_ylabel('x2')
+    ax.set_zlabel('x3')
+    plt.title('x1 vs x2 vs x3')
+    plt.legend()
+    plt.tight_layout()
+    plt.savefig(os.path.join(results_path, 'solution_3D.png'))
+
     plt.show()
 
+    print('Analyzing differences between solutions and Jacobians:')
     for diff_label, diff_values in diffs.items():
-        print(f"Difference between {diff_label} solutions: {diff_values[0]:.4e}")
-        print(f"Difference between {diff_label} Jacobians: {diff_values[1]:.4e}")
+        print(f"  Difference between {diff_label} solutions: {diff_values[0]:.4e}")
+        print(f"  Difference between {diff_label} Jacobians: {diff_values[1]:.4e}")
+        print(f"  -----------------------------")
 
     print('')
 
+    print('Analyzing time taken for solving ODE and computing Jacobian:')
     for time_solve, time_jacobian, label in zip(times_solve, times_jacobi, labels):
-        print(f"Time taken by {label} solve: {time_solve:.4f} seconds")
-        print(f"Time taken by {label} jacobian: {time_jacobian:.4f} seconds")
+        print(f"  Time taken by {label} solve: {time_solve:.4f} seconds")
+        print(f"  Time taken by {label} jacobian: {time_jacobian:.4f} seconds")
+        print(f"  -----------------------------")
 
 if __name__ == "__main__":
-    main()
+    this_path = str(Path(__file__).parent.resolve())
+    results_path = os.path.join(this_path, 'results')
+    os.makedirs(results_path, exist_ok=True)
+    main(results_path)
