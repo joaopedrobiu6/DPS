@@ -63,7 +63,6 @@ def main(results_path='results'):
     plt.xlabel('Library')
     plt.ylabel('Time (s)')
     plt.tight_layout()
-    plt.title('Time taken for solving ODE and computing Jacobian')
     plt.legend()
     plt.savefig(os.path.join(results_path, 'time_solveJacobian.png'))
 
@@ -84,7 +83,7 @@ def main(results_path='results'):
     plt.tight_layout()
     plt.savefig(os.path.join(results_path, 'initial_solution_3D.png'))
 
-    plt.show()
+    print(f'All plots saved to results folder {results_path}.')
 
     print('Analyzing differences between solutions and Jacobians:')
     for diff_label, diff_values in diffs.items():

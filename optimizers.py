@@ -10,8 +10,9 @@ import jax.numpy as jnp
 from jax import grad
 
 # Import solvers, parameters and models from separate files
-from params_and_model import ODEFunc, a_initial, tol_optimization, max_nfev_optimization
+from params_and_model import ODEFunc, a_initial, tol_optimization, max_nfev_optimization, tmin, tmax, nt, delta_jacobian_scipy, initial_conditions
 from solver import solve_with_scipy, solve_with_pytorch, solve_with_jax
+num_functions = len(initial_conditions)  # assuming number of functions is the same as the length of initial conditions
 
 def save_results(losses, parameters, optimized_a, optimizer_name, results_path, time):
     # Plot losses
@@ -41,7 +42,6 @@ def save_results(losses, parameters, optimized_a, optimizer_name, results_path, 
     print(f'  Loss: {losses[-1]:.4e}')
 
 
-
 # Perform the optimization using SciPy
 def optimize_with_scipy(results_path):
     def objective(a):
@@ -49,11 +49,27 @@ def optimize_with_scipy(results_path):
         final_state = solution[:, -1]
         return np.sum(final_state ** 2)
     
+    # Compute the Jacobian using finite differences
+    def jacobian(a):
+        t = np.linspace(tmin, tmax, nt)
+        Jacobian_scipy = np.empty((num_functions, len(a_initial)))
+        for i in range(len(a_initial)):
+            a_plus_delta = a.copy()
+            a_plus_delta[i] += delta_jacobian_scipy
+            a_minus_delta = a.copy()
+            a_minus_delta[i] -= delta_jacobian_scipy
+
+            sol_plus_delta = solve_with_scipy(a_plus_delta)
+            sol_minus_delta = solve_with_scipy(a_minus_delta)
+            Jacobian_scipy[:, i] = (sol_plus_delta[-1, :] - sol_minus_delta[-1, :]) / (2 * delta_jacobian_scipy)
+
+        return Jacobian_scipy
+    
     losses = []
     parameters = []
     def residuals(a):
         solution = solve_with_scipy(a)
-        final_state = solution[:, -1]
+        final_state = solution[-1, :]
         loss = np.sum(final_state ** 2)
         losses.append(loss)
         parameters.append(a)
@@ -64,11 +80,12 @@ def optimize_with_scipy(results_path):
         parameters.append(xk)
 
     start_time = time.time()
-    result = minimize(objective, a_initial, method='BFGS', callback=callback_minimize)
-    # result = least_squares(residuals, a_initial, method='trf', ftol=tol_optimization, max_nfev = max_nfev_optimization, verbose=0)
+    # result = minimize(objective, a_initial, method='BFGS', callback=callback_minimize)
+    result = least_squares(residuals, a_initial, method='trf', gtol=tol_optimization, max_nfev=max_nfev_optimization, verbose=0)
     optimized_a = result.x
-    save_results(losses, parameters, optimized_a, 'scipy', results_path, time.time() - start_time)
-    return optimized_a
+    elapsed_time = time.time() - start_time
+    save_results(losses, parameters, optimized_a, 'scipy', results_path, elapsed_time)
+    return optimized_a, elapsed_time, losses[-1]
 
 
 # Perform the optimization using PyTorch
@@ -77,7 +94,10 @@ def optimize_with_pytorch(results_path):
     a_torch = torch.tensor(a_initial, requires_grad=True) 
     ode_system = ODEFunc(a_torch)
 
-    optimizer = torch.optim.LBFGS(ode_system.parameters(), lr=0.1)
+    ## Find better optimized with adaptative learning rate
+    # optimizer = torch.optim.RMSprop(ode_system.parameters(), lr=0.02)
+    # optimizer = torch.optim.SGD(ode_system.parameters(), lr=0.02)
+    optimizer = torch.optim.Adam(ode_system.parameters(), lr=0.02)
 
     losses = []
     parameters = []
@@ -95,12 +115,13 @@ def optimize_with_pytorch(results_path):
         params = ode_system.a.detach().numpy().copy()
         losses.append(loss.item())
         parameters.append(params)
-        if step > 3 and (losses[-2] - losses[-1])/losses[-2] < tol_optimization:
+        if step > 3 and np.abs(losses[-2] - losses[-1])/losses[-2] < tol_optimization:
             break
 
     optimized_a = ode_system.a.detach().numpy().copy()
-    save_results(losses, parameters, optimized_a, 'pytorch', results_path, time.time() - start_time)
-    return optimized_a
+    elapsed_time = time.time() - start_time
+    save_results(losses, parameters, optimized_a, 'pytorch', results_path, elapsed_time)
+    return optimized_a, elapsed_time, losses[-1]
 
 
 # Perform the optimization using JAX
@@ -114,7 +135,9 @@ def optimize_with_jax(results_path):
 
     loss_fn_jit = jit(loss_fn)
     grad_loss_fn_jit = jit(grad(loss_fn))
-    optimizer = optax.optimistic_gradient_descent(3e-1)
+    # optimizer = optax.optimistic_gradient_descent(0.06)
+    # optimizer = optax.rmsprop(0.06)
+    optimizer = optax.adabelief(0.01)
     optimizer_state = optimizer.init(a_initial_jax)
 
     # loss_grad_fn = jit(value_and_grad(loss_fn))
@@ -134,9 +157,10 @@ def optimize_with_jax(results_path):
         losses.append(loss)
         parameters.append(params)
 
-        if i > 3 and (losses[-2] - losses[-1])/losses[-2] < tol_optimization:
+        if i > 3 and np.abs(losses[-2] - losses[-1])/losses[-2] < tol_optimization:
             break
 
     optimized_a = params
-    save_results(losses, parameters, optimized_a, 'jax', results_path, time.time() - start_time)
-    return optimized_a
+    elapsed_time = time.time() - start_time
+    save_results(losses, parameters, optimized_a, 'jax', results_path, elapsed_time)
+    return optimized_a, elapsed_time, losses[-1]
