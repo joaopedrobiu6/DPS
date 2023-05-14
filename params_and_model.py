@@ -4,7 +4,7 @@ import torch
 initial_conditions = [5., 5., 5.]
 a_initial = [10., 20., 8./3.]  # sigma, rho, beta
 tmin = 0
-tmax = 1.3
+tmax = 0.9
 nt = int(40 * (tmax - tmin))
 delta_jacobian_scipy = 1e-5
 tol_optimization = 1e-2
