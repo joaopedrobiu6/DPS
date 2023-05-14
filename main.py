@@ -14,7 +14,7 @@ config.update("jax_enable_x64", True)
 solvers = [solve_with_scipy, solve_with_pytorch, solve_with_jax]
 jacobi_computers = [compute_jacobian_scipy, compute_jacobian_torch, compute_jacobian_jax]
 labels = ["Scipy", "PyTorch", "JAX"]
-label_styles = [['r-','r*'], ['b--','bx'], ['k-.','ko']]
+label_styles = [['k-','k*'], ['r--','rx'], ['b-.','b+']]
 num_functions = len(initial_conditions)
 functions = [f"x{i+1}" for i in range(num_functions)]
 
@@ -26,7 +26,6 @@ def compute_and_time(func):
 def main(results_path='results'):
     w, times_solve = zip(*[compute_and_time(solver) for solver in solvers])
     Jacobian, times_jacobi = zip(*[compute_and_time(jacobian) for jacobian in jacobi_computers])
-    times = [time_solve + time_jacobi for time_solve, time_jacobi in zip(times_solve, times_jacobi)]
     diffs = compute_diff()
 
     t = np.linspace(tmin, tmax, nt)
@@ -36,6 +35,8 @@ def main(results_path='results'):
         for i, func in enumerate(functions):
             if label == 'Scipy':
                 plt.plot(t, w_i[i], ls[0], label=f'{label} {func}')
+            elif label == 'PyTorch':
+                plt.plot(t, w_i[:, i].detach().numpy(), ls[0], label=f'{label} {func}')
             else:
                 plt.plot(t, w_i[:, i], ls[0], label=f'{label} {func}')
     plt.xlabel('Time')
@@ -48,7 +49,7 @@ def main(results_path='results'):
     plt.figure()
     for Jacobian_i, label, ls in zip(Jacobian, labels, label_styles):
         for i, func in enumerate(functions):
-            plt.plot(a, Jacobian_i[i, :], ls[1], label=f'{label} Jacobian {func}')
+            plt.plot(a, Jacobian_i[i, :], ls[1], label=f'{label} Jacobian {func}', markersize=10)
     plt.xlabel('Parameter a')
     plt.ylabel('Jacobian Value')
     plt.title('Jacobians with respect to a')
@@ -71,6 +72,8 @@ def main(results_path='results'):
     for w_i, label, ls in zip(w, labels, label_styles):
         if label == 'Scipy':
             ax.plot(w_i[0], w_i[1], w_i[2], ls[0], label=f'{label}')
+        elif label == 'PyTorch':
+            ax.plot(w_i[:, 0].detach().numpy(), w_i[:, 1].detach().numpy(), w_i[:, 2].detach().numpy(), ls[0], label=f'{label}')
         else:
             ax.plot(w_i[:, 0], w_i[:, 1], w_i[:, 2], ls[0], label=f'{label}')
     ax.set_xlabel('x1')
@@ -85,8 +88,8 @@ def main(results_path='results'):
 
     print('Analyzing differences between solutions and Jacobians:')
     for diff_label, diff_values in diffs.items():
-        print(f"  Difference between {diff_label} solutions: {diff_values[0]:.4e}")
-        print(f"  Difference between {diff_label} Jacobians: {diff_values[1]:.4e}")
+        print(f"  Relative difference between {diff_label} solutions: {diff_values[0]:.4e}")
+        print(f"  Relative difference between {diff_label} Jacobians: {diff_values[1]:.4e}")
         print(f"  -----------------------------")
 
     print('')

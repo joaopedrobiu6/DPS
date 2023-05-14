@@ -1,4 +1,3 @@
-import jax.numpy as jnp
 import torch
 
 # Parameters and initial conditions
@@ -6,8 +5,8 @@ initial_conditions = [5., 5., 5.]
 a = [10, 20, 8/3] # sigma, rho, beta
 tmin = 0
 tmax = 10
-nt = 500
-delta = 1e-5
+nt = int(50*(tmax-tmin))
+delta_jacobian_scipy = 1e-5
 
 # Define the system of equations
 def B(a, x, y, z):
