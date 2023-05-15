@@ -33,7 +33,6 @@ def solve_with_pytorch(a=None, odefunc=None):
     t_torch = torch.linspace(tmin, tmax, nt)
     if odefunc is not None:
         ode_system = odefunc
-        ode_system.a.data = a_torch
     else:
         ode_system = ODEFunc(a_torch)
     solution_torch = torch_odeint(ode_system, initial_conditions_torch, t_torch, method='rk4')
@@ -41,7 +40,7 @@ def solve_with_pytorch(a=None, odefunc=None):
 
 # Solve the ODE using JAX
 def solve_with_jax(a=None):
-    initial_conditions_jax = jnp.array(initial_conditions, dtype=jnp.float64)
+    initial_conditions_jax = jnp.array(initial_conditions)#, dtype=jnp.float64)
     if a is not None:
         a_jax = a
     else:

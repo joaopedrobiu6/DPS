@@ -5,16 +5,20 @@ import numpy as np
 initial_conditions = [5., 5., 5.]
 a_initial = [10., 20., 8./3.]  # sigma, rho, beta
 tmin = 0
-tmax = 9
-nt_per_time_unit = 50
-n_steps_to_compute_loss = 100
-x_target = 2.5
+tmax = 13
+nt_per_time_unit = 80
+n_steps_to_compute_loss = 200
+x_target = 3.5
 x_to_optimize = 0 # optimize x0
-delta_jacobian_scipy = 1e-6
+delta_jacobian_scipy = 1e-5
 tol_optimization = 1e-3
-max_nfev_optimization = 50
-learning_rate_torch = 0.05
-learning_rate_jax = 0.5
+max_nfev_optimization = 20
+learning_rate_torch = 0.4
+learning_rate_jax = 0.2
+use_scipy_torch = True
+use_scipy_jax = False
+
+step_optimization_verbose = False
 
 nt = int(nt_per_time_unit * (tmax - tmin))
 n_steps_to_compute_loss = np.min([n_steps_to_compute_loss, nt])

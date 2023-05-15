@@ -4,8 +4,8 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 
-from jax.config import config
-config.update("jax_enable_x64", True)
+# from jax.config import config
+# config.update("jax_enable_x64", True)
 
 from params_and_model import tmin, tmax, nt, a_initial, initial_conditions
 from solver import solve_with_scipy, solve_with_pytorch, solve_with_jax
