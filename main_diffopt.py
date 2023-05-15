@@ -12,6 +12,7 @@ from solver import solve_with_scipy, solve_with_pytorch, solve_with_jax
 from optimizers import optimize_with_scipy, optimize_with_pytorch, optimize_with_jax
 
 labels = ["Scipy", "PyTorch", "JAX"]
+label_styles = [['k-','k*'], ['r--','rx'], ['b-.','b+']]
 
 # Main function
 def main(results_path='results'):
@@ -34,15 +35,15 @@ def main(results_path='results'):
     # Plot initial figures
     plt.figure()
     t = np.linspace(tmin, tmax, nt)
-    plt.plot(t, scipy_initial[:, 0], label='Scipy x')
-    plt.plot(t, torch_initial[:, 0], label='PyTorch x')
-    plt.plot(t, jax_initial[:, 0], label='JAX x')
-    plt.plot(t, scipy_initial[:, 1], label='Scipy y')
-    plt.plot(t, torch_initial[:, 1], label='PyTorch y')
-    plt.plot(t, jax_initial[:, 1], label='JAX z')
-    plt.plot(t, scipy_initial[:, 2], label='Scipy z')
-    plt.plot(t, torch_initial[:, 2], label='PyTorch z')
-    plt.plot(t, jax_initial[:, 2], label='JAX z')
+    plt.plot(t, scipy_initial[:, 0], label_styles[0][0], label=f'{labels[0]} x')
+    plt.plot(t, torch_initial[:, 0], label_styles[1][0], label=f'{labels[1]} x')
+    plt.plot(t, jax_initial[:, 0], label_styles[2][0], label=f'{labels[2]} x')
+    plt.plot(t, scipy_initial[:, 1], label_styles[0][0], label=f'{labels[0]} y')
+    plt.plot(t, torch_initial[:, 1], label_styles[1][0], label=f'{labels[1]} y')
+    plt.plot(t, jax_initial[:, 1], label_styles[2][0], label=f'{labels[2]} y')
+    plt.plot(t, scipy_initial[:, 2], label_styles[0][0], label=f'{labels[0]} z')
+    plt.plot(t, torch_initial[:, 2], label_styles[1][0], label=f'{labels[1]} z')
+    plt.plot(t, jax_initial[:, 2], label_styles[2][0], label=f'{labels[2]} z')
     plt.xlabel('Time')
     plt.ylabel('Solution Value')
     plt.title('ODE Solutions')
@@ -52,9 +53,9 @@ def main(results_path='results'):
 
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')
-    ax.plot(scipy_initial[:, 0], scipy_initial[:, 1], scipy_initial[:, 2], label='Scipy')
-    ax.plot(torch_initial[:, 0], torch_initial[:, 1], torch_initial[:, 2], label='PyTorch')
-    ax.plot(jax_initial[:, 0], jax_initial[:, 1], jax_initial[:, 2], label='JAX')
+    ax.plot(scipy_initial[:, 0], scipy_initial[:, 1], scipy_initial[:, 2], label=f'{labels[0]}')
+    ax.plot(torch_initial[:, 0], torch_initial[:, 1], torch_initial[:, 2], label=f'{labels[1]}')
+    ax.plot(jax_initial[:, 0], jax_initial[:, 1], jax_initial[:, 2], label=f'{labels[2]}')
     ax.set_xlabel('x1')
     ax.set_ylabel('x2')
     ax.set_zlabel('x3')
@@ -66,15 +67,15 @@ def main(results_path='results'):
     # Plot solutions
     plt.figure()
     t = np.linspace(tmin, tmax, nt)
-    plt.plot(t, scipy_solution[:, 0], label='Scipy x')
-    plt.plot(t, torch_solution[:, 0], label='PyTorch x')
-    plt.plot(t, jax_solution[:, 0], label='JAX x')
-    plt.plot(t, scipy_solution[:, 1], label='Scipy y')
-    plt.plot(t, torch_solution[:, 1], label='PyTorch y')
-    plt.plot(t, jax_solution[:, 1], label='JAX z')
-    plt.plot(t, scipy_solution[:, 2], label='Scipy z')
-    plt.plot(t, torch_solution[:, 2], label='PyTorch z')
-    plt.plot(t, jax_solution[:, 2], label='JAX z')
+    plt.plot(t, scipy_solution[:, 0], label_styles[0][0], label=f'{labels[0]} x')
+    plt.plot(t, torch_solution[:, 0], label_styles[1][0], label=f'{labels[1]} x')
+    plt.plot(t, jax_solution[:, 0], label_styles[2][0], label=f'{labels[2]} x')
+    plt.plot(t, scipy_solution[:, 1], label_styles[0][0], label=f'{labels[0]} y')
+    plt.plot(t, torch_solution[:, 1], label_styles[1][0], label=f'{labels[1]} y')
+    plt.plot(t, jax_solution[:, 1], label_styles[2][0], label=f'{labels[2]} y')
+    plt.plot(t, scipy_solution[:, 2], label_styles[0][0], label=f'{labels[0]} z')
+    plt.plot(t, torch_solution[:, 2], label_styles[1][0], label=f'{labels[1]} z')
+    plt.plot(t, jax_solution[:, 2], label_styles[2][0], label=f'{labels[2]} z')
     plt.xlabel('Time')
     plt.ylabel('Solution Value')
     plt.title('ODE Solutions')
@@ -84,9 +85,9 @@ def main(results_path='results'):
 
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')
-    ax.plot(scipy_solution[:, 0], scipy_solution[:, 1], scipy_solution[:, 2], label='Scipy')
-    ax.plot(torch_solution[:, 0], torch_solution[:, 1], torch_solution[:, 2], label='PyTorch')
-    ax.plot(jax_solution[:, 0], jax_solution[:, 1], jax_solution[:, 2], label='JAX')
+    ax.plot(scipy_solution[:, 0], scipy_solution[:, 1], scipy_solution[:, 2], label_styles[0][0], label=f'{labels[0]}')
+    ax.plot(torch_solution[:, 0], torch_solution[:, 1], torch_solution[:, 2], label_styles[1][0], label=f'{labels[1]}')
+    ax.plot(jax_solution[:, 0], jax_solution[:, 1], jax_solution[:, 2], label_styles[2][0], label=f'{labels[2]}')
     ax.set_xlabel('x1')
     ax.set_ylabel('x2')
     ax.set_zlabel('x3')
