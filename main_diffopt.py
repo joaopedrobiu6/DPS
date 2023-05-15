@@ -3,11 +3,12 @@ import numpy as np
 from pathlib import Path
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
+# import torch
+# torch.set_default_dtype(torch.float64)
+from jax.config import config
+config.update("jax_enable_x64", True)
 
-# from jax.config import config
-# config.update("jax_enable_x64", True)
-
-from params_and_model import tmin, tmax, nt, a_initial, initial_conditions
+from params_and_model import tmin, tmax, nt, a_initial, initial_conditions, model
 from solver import solve_with_scipy, solve_with_pytorch, solve_with_jax
 from optimizers import optimize_with_scipy, optimize_with_pytorch, optimize_with_jax
 
@@ -67,7 +68,7 @@ def main(results_path='results'):
     fig.tight_layout(rect=[0, 0, 1, 0.95])
 
     # Save the figure
-    plt.savefig(os.path.join(results_path, 'solution_comparison.png'))
+    plt.savefig(os.path.join(results_path, f'solution_comparison_{model}.png'))
 
     plt.figure(figsize=(8, 6))
     time_data = [time_scipy, time_pytorch, time_jax]
@@ -82,7 +83,7 @@ def main(results_path='results'):
     plt.ylabel('Time (s)')
     plt.title('Optimization Time')
     plt.tight_layout()
-    plt.savefig(os.path.join(results_path, 'optimization_time.png'))
+    plt.savefig(os.path.join(results_path, f'optimization_time_{model}.png'))
 
     plt.figure(figsize=(8, 6))
     loss_data = [loss_scipy, loss_pytorch, loss_jax]
@@ -91,7 +92,7 @@ def main(results_path='results'):
     plt.ylabel('Ln(Loss)')
     plt.tight_layout()
     plt.legend()
-    plt.savefig(os.path.join(results_path, 'optimization_loss.png'))
+    plt.savefig(os.path.join(results_path, f'optimization_loss_{model}.png'))
 
     print('All figures saved to the results folder.')
 

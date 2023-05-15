@@ -23,18 +23,19 @@ def solve_with_scipy(a=None):
     return sol
 
 # Solve the ODE using PyTorch
-def solve_with_pytorch(a=None, odefunc=None):
-    initial_conditions_torch = torch.tensor(initial_conditions, requires_grad=True)
+def solve_with_pytorch(a=None, odefunc:ODEFunc=None, initial_conditions_torch=None):
+    if initial_conditions_torch is None:
+        initial_conditions_torch = torch.tensor(initial_conditions, requires_grad=True)
     if a is not None:
-        a = a
+        a = torch.tensor(a, requires_grad=True)
     else:
-        a = a_initial
-    a_torch = torch.tensor(a, requires_grad=True)
+        a = torch.tensor(a_initial, requires_grad=True)
     t_torch = torch.linspace(tmin, tmax, nt)
     if odefunc is not None:
         ode_system = odefunc
+        odefunc.a.data = a
     else:
-        ode_system = ODEFunc(a_torch)
+        ode_system = ODEFunc(a)
     solution_torch = torch_odeint(ode_system, initial_conditions_torch, t_torch, method='rk4')
     return solution_torch
 

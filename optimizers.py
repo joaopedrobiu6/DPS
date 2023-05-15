@@ -15,7 +15,7 @@ import jaxopt
 from params_and_model import (ODEFunc, a_initial, tol_optimization, max_nfev_optimization, tmin, tmax, nt,
                               delta_jacobian_scipy, initial_conditions, x_target, x_to_optimize,
                               learning_rate_torch, learning_rate_jax, n_steps_to_compute_loss,
-                              use_scipy_torch, use_scipy_jax, step_optimization_verbose)
+                              use_scipy_torch, use_scipy_jax, step_optimization_verbose, model)
 from solver import solve_with_scipy, solve_with_pytorch, solve_with_jax
 num_functions = len(initial_conditions)  # assuming number of functions is the same as the length of initial conditions
 t_torch = torch.linspace(tmin, tmax, nt)
@@ -32,7 +32,7 @@ def save_results(losses, parameters, optimized_a, optimizer_name, results_path, 
     plt.ylabel('Parameter - Initial value')
     plt.title(f'{optimizer_name.capitalize()} Optimization: Parameters over steps')
     plt.legend()
-    plt.savefig(os.path.join(results_path, f'{optimizer_name}_parameters.png'))
+    plt.savefig(os.path.join(results_path, f'{optimizer_name}_parameters_{model}.png'))
 
     print(f'  Results with {optimizer_name} in {len(losses)} steps and {time:.4e} seconds:')
     print(f'    Parameters: {", ".join([f"{val:.4e}" for val in optimized_a])}')
@@ -123,6 +123,7 @@ def optimize_with_pytorch(results_path):
         result = optimization_function_scipy(objective)
     else:
         ### USING PYTORCH OPTIMIZER ###
+        initial_conditions_torch = torch.tensor(initial_conditions, requires_grad=True)
         # optimizer = torch.optim.RMSprop(ode_system.parameters(), lr=learning_rate_torch)
         # optimizer = torch.optim.SGD(ode_system.parameters(), lr=learning_rate_torch)
         # optimizer = torch.optim.Adam(ode_system.parameters(), lr=learning_rate_torch)
@@ -134,9 +135,11 @@ def optimize_with_pytorch(results_path):
 
         def closure():
             optimizer.zero_grad()
-            solution_torch = torch_odeint(ode_system, ode_system.a, t_torch)
+            # solution_torch = torch_odeint(ode_system, initial_conditions_torch, t_torch, method='rk4')
+            solution_torch = solve_with_pytorch(ode_system.a.detach().numpy(), ode_system, initial_conditions_torch)
             loss = torch.sum(torch.square(solution_torch[-n_steps_to_compute_loss:, x_to_optimize]-x_target))
             loss.backward()
+            torch.nn.utils.clip_grad_norm_(ode_system.parameters(), 0.05)
             # print('a =',ode_system.a.detach().numpy(), 'loss =', loss.item())
             return loss
         for step in range(max_nfev_optimization):
@@ -149,7 +152,7 @@ def optimize_with_pytorch(results_path):
             parameters.append(params)
             if step_optimization_verbose:
                 print('  step =', step, f'loss = {loss.item():.3e} a =', params, f'took {(time.time()-initial_time):.3e} seconds')
-            if step > 4 and np.abs(losses[-2] - losses[-1])/losses[-2] < tol_optimization:
+            if step > 4 and np.abs(losses[-2] - losses[-1])/(losses[-2]+1e-9) < tol_optimization:
                 break
 
     ### SAVE RESULTS ###
@@ -166,7 +169,7 @@ def optimize_with_jax(results_path):
         solution_jax = solve_with_jax(a)
         loss = jnp.sum(jnp.square(solution_jax[-n_steps_to_compute_loss:,x_to_optimize]-x_target))
         return loss
-    a_initial_jax = jnp.array(a_initial)#, dtype=jnp.float64)
+    a_initial_jax = jnp.array(a_initial, dtype=jnp.float64)
     loss_fn_jit = jit(loss_fn)
     losses=[loss_fn_jit(a_initial)]
     parameters=[a_initial_jax]
@@ -201,7 +204,7 @@ def optimize_with_jax(results_path):
         #     loss = loss_fn_jit(params)
         #     losses.append(loss)
         #     parameters.append(params)
-        #     if step > 3 and np.abs(losses[-2] - losses[-1])/losses[-2] < tol_optimization:
+        #     if step > 3 and np.abs(losses[-2] - losses[-1])/(losses[-2]+1e-9) < tol_optimization:
         #         break
 
         ### USING JAXOPT ###

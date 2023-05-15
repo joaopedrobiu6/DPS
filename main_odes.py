@@ -6,8 +6,9 @@ import matplotlib.pyplot as plt
 from solver import solve_with_scipy, solve_with_pytorch, solve_with_jax
 from jacobi import compute_jacobian_scipy, compute_jacobian_torch, compute_jacobian_jax
 from differences import compute_diff
-from params_and_model import initial_conditions
-from params_and_model import tmin, tmax, nt, a_initial
+from params_and_model import initial_conditions, tmin, tmax, nt, a_initial, model
+# import torch
+# torch.set_default_dtype(torch.float64)
 from jax.config import config
 config.update("jax_enable_x64", True)
 
@@ -45,7 +46,7 @@ def main(results_path='results'):
     plt.title('ODE Solutions')
     plt.legend()
     plt.tight_layout()
-    plt.savefig(os.path.join(results_path, 'initial_solution_timetrace.png'))
+    plt.savefig(os.path.join(results_path, f'initial_solution_timetrace_{model}.png'))
 
     plt.figure()
     for Jacobian_i, label, ls in zip(Jacobian, labels, label_styles):
@@ -56,7 +57,7 @@ def main(results_path='results'):
     plt.title('Jacobians with respect to a')
     plt.legend()
     plt.tight_layout()
-    plt.savefig(os.path.join(results_path, 'jacobians_a.png'))
+    plt.savefig(os.path.join(results_path, f'jacobians_a_{model}.png'))
 
     plt.figure()
     p1 = plt.bar(labels, times_solve, label='Solving ODE')
@@ -65,7 +66,7 @@ def main(results_path='results'):
     plt.ylabel('Time (s)')
     plt.tight_layout()
     plt.legend()
-    plt.savefig(os.path.join(results_path, 'time_solveJacobian.png'))
+    plt.savefig(os.path.join(results_path, f'time_solveJacobian_{model}.png'))
 
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')
@@ -81,7 +82,7 @@ def main(results_path='results'):
     ax.set_zlabel(variables[2])
     plt.legend()
     plt.tight_layout()
-    plt.savefig(os.path.join(results_path, 'initial_solution_3D.png'))
+    plt.savefig(os.path.join(results_path, f'initial_solution_3D_{model}.png'))
 
     print(f'All plots saved to results folder {results_path}.')
 
