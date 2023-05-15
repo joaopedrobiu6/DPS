@@ -15,6 +15,7 @@ solvers = [solve_with_scipy, solve_with_pytorch, solve_with_jax]
 jacobi_computers = [compute_jacobian_scipy, compute_jacobian_torch, compute_jacobian_jax]
 labels = ["Scipy", "PyTorch", "JAX"]
 label_styles = [['k-','k*'], ['r--','rx'], ['b-.','b+']]
+variables = ['x', 'y', 'z']
 num_functions = len(initial_conditions)
 functions = [f"x{i+1}" for i in range(num_functions)]
 
@@ -75,10 +76,9 @@ def main(results_path='results'):
             ax.plot(w_i[:, 0].detach().numpy(), w_i[:, 1].detach().numpy(), w_i[:, 2].detach().numpy(), ls[0], label=f'{label}')
         else:
             ax.plot(w_i[:, 0], w_i[:, 1], w_i[:, 2], ls[0], label=f'{label}')
-    ax.set_xlabel('x1')
-    ax.set_ylabel('x2')
-    ax.set_zlabel('x3')
-    plt.title('x1 vs x2 vs x3')
+    ax.set_xlabel(variables[0])
+    ax.set_ylabel(variables[1])
+    ax.set_zlabel(variables[2])
     plt.legend()
     plt.tight_layout()
     plt.savefig(os.path.join(results_path, 'initial_solution_3D.png'))

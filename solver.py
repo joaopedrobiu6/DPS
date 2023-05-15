@@ -2,7 +2,7 @@ import torch
 import jax.numpy as jnp
 import numpy as np
 from jax import jit
-from scipy.integrate import solve_ivp
+from scipy.integrate import solve_ivp, odeint
 from torchdiffeq import odeint as torch_odeint
 import torch
 # import torchode as to
@@ -17,8 +17,10 @@ def solve_with_scipy(a=None):
         a = a
     else:
         a = a_initial
-    sol = solve_ivp(lambda t, w: system(w, t, a), [tmin, tmax], initial_conditions, t_eval=t, method='RK45')
-    return sol.y.T
+    # sol = solve_ivp(lambda t, w: system(w, t, a), [tmin, tmax], initial_conditions, t_eval=t, method='RK45')
+    # return sol.y.T
+    sol = odeint(lambda w, t: system(w, t, a), initial_conditions, t)
+    return sol
 
 # Solve the ODE using PyTorch
 def solve_with_pytorch(a=None, odefunc=None):
@@ -31,6 +33,7 @@ def solve_with_pytorch(a=None, odefunc=None):
     t_torch = torch.linspace(tmin, tmax, nt)
     if odefunc is not None:
         ode_system = odefunc
+        ode_system.a.data = a_torch
     else:
         ode_system = ODEFunc(a_torch)
     solution_torch = torch_odeint(ode_system, initial_conditions_torch, t_torch, method='rk4')

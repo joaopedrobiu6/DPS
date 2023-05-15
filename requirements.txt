@@ -1,0 +1,8 @@
+jax
+jaxopt
+matplotlib
+numpy
+optax
+scipy
+torch
+torchdiffeq

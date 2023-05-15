@@ -1,14 +1,23 @@
 import torch
+import numpy as np
 
 # Parameters and initial conditions
 initial_conditions = [5., 5., 5.]
 a_initial = [10., 20., 8./3.]  # sigma, rho, beta
 tmin = 0
-tmax = 2
-nt = int(40 * (tmax - tmin))
-delta_jacobian_scipy = 1e-5
-tol_optimization = 1e-2
-max_nfev_optimization = 100
+tmax = 9
+nt_per_time_unit = 50
+n_steps_to_compute_loss = 100
+x_target = 2.5
+x_to_optimize = 0 # optimize x0
+delta_jacobian_scipy = 1e-6
+tol_optimization = 1e-3
+max_nfev_optimization = 50
+learning_rate_torch = 0.05
+learning_rate_jax = 0.5
+
+nt = int(nt_per_time_unit * (tmax - tmin))
+n_steps_to_compute_loss = np.min([n_steps_to_compute_loss, nt])
 
 # Define the system of equations
 def system(w, t, a):
