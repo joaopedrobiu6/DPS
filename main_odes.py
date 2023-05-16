@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 from solver import solve_with_scipy, solve_with_pytorch, solve_with_jax
 from jacobi import compute_jacobian_scipy, compute_jacobian_torch, compute_jacobian_jax
 from differences import compute_diff
-from params_and_model import initial_conditions, tmin, tmax, nt, a_initial, model
+from params_and_model import initial_conditions, tmin, tmax, nt, a_initial, model, iota, vpar_sign, Lambda
 # import torch
 # torch.set_default_dtype(torch.float64)
 from jax.config import config
@@ -32,21 +32,19 @@ def main(results_path='results'):
 
     t = np.linspace(tmin, tmax, nt)
 
-    plt.figure()
-    for w_i, label, ls in zip(w, labels, label_styles):
-        for i, func in enumerate(functions):
-            if label == 'Scipy':
-                plt.plot(t, w_i[:, i], ls[0], label=f'{label} {func}')
-            elif label == 'PyTorch':
+    for i, func in enumerate(functions):
+        plt.figure()
+        for w_i, label, ls in zip(w, labels, label_styles):
+            if label == 'PyTorch':
                 plt.plot(t, w_i[:, i].detach().numpy(), ls[0], label=f'{label} {func}')
             else:
                 plt.plot(t, w_i[:, i], ls[0], label=f'{label} {func}')
-    plt.xlabel('Time')
-    plt.ylabel('Solution Value')
-    plt.title('ODE Solutions')
-    plt.legend()
-    plt.tight_layout()
-    plt.savefig(os.path.join(results_path, f'initial_solution_timetrace_{model}.png'))
+        plt.xlabel('Time')
+        plt.ylabel(f'{func}')
+        plt.title('ODE Solutions')
+        plt.legend()
+        plt.tight_layout()
+        plt.savefig(os.path.join(results_path, f'initial_solution_timetrace_{model}_{func}.png'))
 
     plt.figure()
     for Jacobian_i, label, ls in zip(Jacobian, labels, label_styles):
@@ -69,20 +67,75 @@ def main(results_path='results'):
     plt.savefig(os.path.join(results_path, f'time_solveJacobian_{model}.png'))
 
     fig = plt.figure()
-    ax = fig.add_subplot(111, projection='3d')
-    for w_i, label, ls in zip(w, labels, label_styles):
-        if label == 'Scipy':
-            ax.plot(w_i[0], w_i[1], w_i[2], ls[0], label=f'{label}')
-        elif label == 'PyTorch':
-            ax.plot(w_i[:, 0].detach().numpy(), w_i[:, 1].detach().numpy(), w_i[:, 2].detach().numpy(), ls[0], label=f'{label}')
-        else:
-            ax.plot(w_i[:, 0], w_i[:, 1], w_i[:, 2], ls[0], label=f'{label}')
-    ax.set_xlabel(variables[0])
-    ax.set_ylabel(variables[1])
-    ax.set_zlabel(variables[2])
-    plt.legend()
-    plt.tight_layout()
-    plt.savefig(os.path.join(results_path, f'initial_solution_3D_{model}.png'))
+    if model == 'lorenz':
+        ax = fig.add_subplot(111, projection='3d')
+        for w_i, label, ls in zip(w, labels, label_styles):
+            if label == 'PyTorch':
+                ax.plot(w_i[:, 0].detach().numpy(), w_i[:, 1].detach().numpy(), w_i[:, 2].detach().numpy(), ls[0], label=f'{label}')
+            else:
+                ax.plot(w_i[:, 0], w_i[:, 1], w_i[:, 2], ls[0], label=f'{label}')
+        ax.set_xlabel(variables[0])
+        ax.set_ylabel(variables[1])
+        ax.set_zlabel(variables[2])
+        plt.legend()
+        plt.tight_layout()
+        plt.savefig(os.path.join(results_path, f'initial_solution_3D_{model}.png'))
+    elif model == 'guiding-center':
+        plt.figure()
+        for w_i, label, ls in zip(w, labels, label_styles):
+            if label == 'PyTorch':
+                alpha = w_i[:, 1].detach().numpy()-iota*w_i[:, 2].detach().numpy()
+                x = w_i[:, 0].detach().numpy()
+            else:
+                alpha = w_i[:, 1]-iota*w_i[:, 2]
+                x = w_i[:, 0]
+            plt.plot(np.sqrt(x)*np.cos(alpha), np.sqrt(x)*np.sin(alpha), ls[0], label=f'{label} {func}')
+        plt.xlabel(f'sqrt(psi)*cos(alpha)')
+        plt.ylabel(f'sqrt(psi)*sin(alpha)')
+        plt.title('ODE Solutions')
+        plt.legend()
+        plt.tight_layout()
+        plt.savefig(os.path.join(results_path, f'initial_solution_2D_{model}.png'))
+
+        plt.figure()
+        for w_i, label, ls in zip(w, labels, label_styles):
+            if label == 'PyTorch':
+                x = w_i[:, 0].detach().numpy()
+                y = w_i[:, 1].detach().numpy()
+                z = w_i[:, 2].detach().numpy()
+            else:
+                x = w_i[:, 0]
+                y = w_i[:, 1]
+                z = w_i[:, 2]
+            B_val = a_initial[0] + a_initial[1] * np.sqrt(x) * np.cos(y) + a_initial[2] * np.sin(z)
+            v_parallel = vpar_sign*np.sqrt(1-Lambda*B_val)
+            plt.plot(t, v_parallel, ls[0], label=f'{label} {func}')
+        plt.xlabel('Time')
+        plt.ylabel(f'v_parallel')
+        plt.title('ODE Solutions')
+        plt.legend()
+        plt.tight_layout()
+        plt.savefig(os.path.join(results_path, f'initial_solution_vparallel_{model}.png'))
+
+        plt.figure()
+        for w_i, label, ls in zip(w, labels, label_styles):
+            if label == 'PyTorch':
+                x = w_i[:, 0].detach().numpy()
+                y = w_i[:, 1].detach().numpy()
+                z = w_i[:, 2].detach().numpy()
+            else:
+                x = w_i[:, 0]
+                y = w_i[:, 1]
+                z = w_i[:, 2]
+            B_val = a_initial[0] + a_initial[1] * np.sqrt(x) * np.cos(y) + a_initial[2] * np.sin(z)
+            plt.plot(t, B_val, ls[0], label=f'{label} {func}')
+        plt.xlabel('Time')
+        plt.ylabel(f'B')
+        plt.title('ODE Solutions')
+        plt.legend()
+        plt.tight_layout()
+        plt.savefig(os.path.join(results_path, f'initial_solution_B_{model}.png'))
+
 
     print(f'All plots saved to results folder {results_path}.')
 

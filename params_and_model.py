@@ -18,10 +18,14 @@ if model == 'lorenz':
     learning_rate_torch = 1.1
     learning_rate_jax = 0.2
 elif model == 'guiding-center':
-    initial_conditions = [0.5, 0.1, 0.1]
-    a_initial = [1.0, 0.1, 0.01]  # B0, B1c, alpha
+    initial_conditions = [0.7, 0.1, 0.1]
+    a_initial = [1.0, 0.2, 0.01]  # B0, B1c, B01s
+    vpar_sign = 1
+    Lambda = 0.8
+    iota = 0.41
+    G = 2*np.pi
     tmin = 0
-    tmax = 200
+    tmax = 20
     nt_per_time_unit = 10
     n_steps_to_compute_loss = 30
     x_target = initial_conditions[0]
@@ -43,22 +47,18 @@ n_steps_to_compute_loss = np.min([n_steps_to_compute_loss, nt])
 if model == 'guiding-center':
     ## Guiding-center equations for x=psi, y=theta, z=phi
     # Define the system of equations
-    Lambda = 0.1
-    iota = 0.41
-    G = 2*np.pi
     def B(a, x, y, z):
-        return a[0] + a[1] * x * jnp.cos(y) + a[2] * jnp.sin(z)
+        return a[0] + a[1] * jnp.sqrt(x) * jnp.cos(y) + a[2] * jnp.sin(z)
     
     def dBdx(a, x, y, z):
-        return a[1] * jnp.cos(y)
+        return a[1] * jnp.cos(y) / (2 * jnp.sqrt(x))
     
     def dBdy(a, x, y, z):
-        return -a[1] * x * jnp.sin(y)
+        return -a[1] * jnp.sqrt(x) * jnp.sin(y)
 
     def system(w, t, a):
         x, y, z = w
 
-        vpar_sign = 1
         B_val = B(a, x, y, z)
         dBdx_val = dBdx(a,x,y,z)
         dBdy_val = dBdy(a,x,y,z)
@@ -77,10 +77,9 @@ if model == 'guiding-center':
         def forward(self, t, w):
             x, y, z = w[..., 0], w[..., 1], w[..., 2]
             
-            vpar_sign = 1
-            B_val = self.a[0] + self.a[1] * x * torch.cos(y) + self.a[2] * torch.sin(z)
-            dBdx_val = self.a[1] * torch.cos(y)
-            dBdy_val = -self.a[1] * x * torch.sin(y)
+            B_val = self.a[0] + self.a[1] * torch.sqrt(x) * torch.cos(y) + self.a[2] * torch.sin(z)
+            dBdx_val = self.a[1] * torch.cos(y) / (2 * torch.sqrt(x))
+            dBdy_val = -self.a[1] * torch.sqrt(x) * torch.sin(y)
 
             v_parallel = vpar_sign*torch.sqrt(1-Lambda*B_val)
             dxdt =-(2*Lambda-B_val)/(2*Lambda*B_val)*dBdy_val
