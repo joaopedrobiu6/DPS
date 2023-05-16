@@ -19,10 +19,10 @@ if model == 'lorenz':
     learning_rate_jax = 0.2
 elif model == 'guiding-center':
     initial_conditions = [0.5, 0.1, 0.1]
-    a_initial = [1.0, 0.1, 0.05]  # sigma, rho, beta
+    a_initial = [1.0, 0.1, 0.01]  # B0, B1c, alpha
     tmin = 0
-    tmax = 300
-    nt_per_time_unit = 5
+    tmax = 200
+    nt_per_time_unit = 10
     n_steps_to_compute_loss = 30
     x_target = initial_conditions[0]
     x_to_optimize = 0 # optimize x0
@@ -32,7 +32,7 @@ elif model == 'guiding-center':
 
 delta_jacobian_scipy = 1e-5
 tol_optimization = 1e-3
-use_scipy_torch = False
+use_scipy_torch = True
 use_scipy_jax = False
 step_optimization_verbose = True
 
@@ -43,17 +43,17 @@ n_steps_to_compute_loss = np.min([n_steps_to_compute_loss, nt])
 if model == 'guiding-center':
     ## Guiding-center equations for x=psi, y=theta, z=phi
     # Define the system of equations
-    Lambda = 0.9
+    Lambda = 0.1
     iota = 0.41
     G = 2*np.pi
     def B(a, x, y, z):
-        return a[0] + a[1] * x * jnp.cos(a[2] * y)
+        return a[0] + a[1] * x * jnp.cos(y) + a[2] * jnp.sin(z)
     
     def dBdx(a, x, y, z):
-        return a[1] * jnp.cos(a[2] * y)
+        return a[1] * jnp.cos(y)
     
     def dBdy(a, x, y, z):
-        return -a[1] * a[2] * x * jnp.sin(a[2] * y)
+        return -a[1] * x * jnp.sin(y)
 
     def system(w, t, a):
         x, y, z = w
@@ -65,7 +65,7 @@ if model == 'guiding-center':
 
         v_parallel = vpar_sign*jnp.sqrt(1-Lambda*B_val)
         dxdt =-(2*Lambda-B_val)/(2*Lambda*B_val)*dBdy_val
-        dydt = (B_val-2*Lambda)/(2*Lambda*B_val)*dBdx_val+iota/G*B_val
+        dydt = (B_val-2*Lambda)/(2*Lambda*B_val)*dBdx_val+iota*v_parallel/G*B_val
         dzdt = v_parallel*B_val/G
         return [dxdt, dydt, dzdt]
 
@@ -78,13 +78,13 @@ if model == 'guiding-center':
             x, y, z = w[..., 0], w[..., 1], w[..., 2]
             
             vpar_sign = 1
-            B_val = self.a[0] + self.a[1] * x * torch.cos(self.a[2] * y)
-            dBdx_val = self.a[1] * torch.cos(self.a[2] * y)
-            dBdy_val = -self.a[1] * self.a[2] * x * torch.sin(self.a[2] * y)
+            B_val = self.a[0] + self.a[1] * x * torch.cos(y) + self.a[2] * torch.sin(z)
+            dBdx_val = self.a[1] * torch.cos(y)
+            dBdy_val = -self.a[1] * x * torch.sin(y)
 
             v_parallel = vpar_sign*torch.sqrt(1-Lambda*B_val)
             dxdt =-(2*Lambda-B_val)/(2*Lambda*B_val)*dBdy_val
-            dydt = (B_val-2*Lambda)/(2*Lambda*B_val)*dBdx_val+iota/G*B_val
+            dydt = (B_val-2*Lambda)/(2*Lambda*B_val)*dBdx_val+iota*v_parallel/G*B_val
             dzdt = v_parallel*B_val/G
             return torch.stack([dxdt, dydt, dzdt], dim=-1)
 elif model == 'lorenz':

@@ -48,6 +48,8 @@ def optimize_with_scipy(results_path):
         initial_time = time.time()
         solution = solve_with_scipy(a)
         final_state = solution[-n_steps_to_compute_loss:, x_to_optimize]-x_target
+        # solution = [[x1(t), y1(t), z1(t)],[x2(t), y2(t), z2(t)],...]
+        # mean_solution = np.mean(solution, axis=(0,2))
         loss = np.sum(np.square(final_state))
         grad = np.empty((len(a_initial,)))
         for i in range(len(a_initial)):
