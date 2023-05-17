@@ -7,7 +7,7 @@ from solver import solve_with_scipy, solve_with_pytorch, solve_with_jax
 from jacobi import compute_jacobian_scipy, compute_jacobian_torch, compute_jacobian_jax
 from differences import compute_diff
 from params_and_model import (
-    initial_conditions, tmin, tmax, nt, a_initial, model, iota, vpar_sign, Lambda,
+    initial_conditions, tmin, tmax, nt, a_initial, model, iota, Lambda,
     solver_models, variables, label_styles
 )
 from jax.config import config
@@ -90,9 +90,12 @@ def main(results_path='results'):
             x = w_i_val[:, 0]
             y = w_i_val[:, 1]
             z = w_i_val[:, 2]
+            if w_i_val.shape[1] == 4:
+                v_parallel = w_i_val[:, 3]
+                plt.plot(t, v_parallel, ls[0], label=f'{label} {func}')
             B_val = a_initial[0] + a_initial[1] * np.sqrt(x) * np.cos(y) + a_initial[2] * np.sin(z)
-            v_parallel = vpar_sign * np.sqrt(1 - Lambda * B_val)
-            plt.plot(t, v_parallel, ls[0], label=f'{label} {func}')
+            v_parallel_analytical = np.sqrt(1 - Lambda * B_val)
+            plt.plot(t, v_parallel_analytical, ls[1], label=f'{label} {func} analytical')
         plt.xlabel('Time')
         plt.ylabel(f'v_parallel')
         plt.title('ODE Solutions')
