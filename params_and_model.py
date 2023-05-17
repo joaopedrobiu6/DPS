@@ -3,9 +3,12 @@ import numpy as np
 import jax.numpy as jnp
 
 model = 'guiding-center' # 'lorenz' or 'guiding-center'
+solver_models = ["Scipy"]#, "PyTorch", "JAX"]
+label_styles = [['k-','k*'], ['r--','rx'], ['b-.','b+']]
 
 # Parameters and initial conditions
 if model == 'lorenz':
+    variables = ['x', 'y', 'z']
     initial_conditions = [5., 5., 5.]
     a_initial = [10., 20., 8./3.]  # sigma, rho, beta
     tmin = 0
@@ -18,14 +21,15 @@ if model == 'lorenz':
     learning_rate_torch = 1.1
     learning_rate_jax = 0.2
 elif model == 'guiding-center':
+    variables = ['x', 'y', 'z']
     initial_conditions = [0.7, 0.1, 0.1]
-    a_initial = [1.0, 0.2, 0.01]  # B0, B1c, B01s
+    a_initial = [1.0, 0.2, 0.05]  # B0, B1c, B01s
     vpar_sign = 1
-    Lambda = 0.8
+    Lambda = 0.85
     iota = 0.41
     G = 2*np.pi
     tmin = 0
-    tmax = 20
+    tmax = 150
     nt_per_time_unit = 10
     n_steps_to_compute_loss = 30
     x_target = initial_conditions[0]
