@@ -16,6 +16,8 @@ DPS offers a set of tools to solve and analyze ordinary differential equations (
 ## Usage
 To use DPS, you can clone the repository and run the Python scripts `main_odes.py` and `main_diffopt.py` directly. These scripts provide different functionalities for solving ODEs and optimizing parameters, respectively.
 
+The system of equations and parameters being used are in the `params_and_model.py` file. Please change the parameters there according to what you want.
+
 ### Solving ODEs
 To solve ODEs using DPS, run the following command:
 ```shell
