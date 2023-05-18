@@ -59,7 +59,7 @@ def main(results_path='results'):
         for j, model in enumerate(selected_solver_models):
             initial_solutions_val = initial_solutions[j].detach().numpy() if model == 'PyTorch' else initial_solutions[j]
             optimized_solutions_val = optimized_solutions[j].detach().numpy() if model == 'PyTorch' else optimized_solutions[j]
-            if model_equations == 'Lorenz':
+            if model_equations == 'lorenz':
                 i_max = 3
             elif model_equations == 'guiding-center':
                 i_max = 4

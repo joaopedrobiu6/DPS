@@ -12,10 +12,10 @@ if model == 'lorenz':
     initial_conditions = [5., 5., 5.]
     a_initial = [10., 20., 8./3.]  # sigma, rho, beta
     tmin = 0
-    tmax = 13
-    nt_per_time_unit = 80
-    n_steps_to_compute_loss = 200
-    x_target = 3.5
+    tmax = 12
+    nt_per_time_unit = 120
+    n_steps_to_compute_loss = 70
+    x_target = 0.5
     x_to_optimize = 0 # optimize x0
     max_nfev_optimization = 20
     learning_rate_torch = 1.1
@@ -37,8 +37,8 @@ elif model == 'guiding-center':
     learning_rate_torch = 0.1
     learning_rate_jax = 0.2
 
-delta_jacobian_scipy = 1e-5
-tol_optimization = 1e-3
+delta_jacobian_scipy = 1e-7
+tol_optimization = 1e-2
 use_scipy_jax = False
 use_scipy_torch = False
 step_optimization_verbose = True
@@ -149,6 +149,13 @@ if model == 'guiding-center':
             return torch.stack([dxdt, dydt, dzdt, dvdt], dim=-1)
 elif model == 'lorenz':
     def system(w, t, a):
+        x, y, z = w
+        dxdt = a[0] * (y - x)
+        dydt = x * (a[1] - z) - y
+        dzdt = x * y - a[2] * z
+        return [dxdt, dydt, dzdt]
+    
+    def system_jax(w, t, a):
         x, y, z = w
         dxdt = a[0] * (y - x)
         dydt = x * (a[1] - z) - y

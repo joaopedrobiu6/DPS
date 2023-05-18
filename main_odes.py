@@ -7,9 +7,11 @@ from solver import solve_with_scipy, solve_with_pytorch, solve_with_jax
 from jacobi import compute_jacobian_scipy, compute_jacobian_torch, compute_jacobian_jax
 from differences import compute_diff
 from params_and_model import (
-    initial_conditions, tmin, tmax, nt, a_initial, model, iota, Lambda,
-    solver_models, variables, label_styles, B
+    tmin, tmax, nt, a_initial, model,
+    solver_models, variables, label_styles
 )
+if model == 'guiding-center':
+    from params_and_model import B, Lambda
 from jax.config import config
 config.update("jax_enable_x64", True)
 
