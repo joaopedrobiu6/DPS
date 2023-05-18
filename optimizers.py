@@ -47,8 +47,6 @@ def optimize_with_scipy(results_path):
         initial_time = time.time()
         solution = solve_with_scipy(a)
         final_state = solution[-n_steps_to_compute_loss:, x_to_optimize]-x_target
-        # solution = [[x1(t), y1(t), z1(t)],[x2(t), y2(t), z2(t)],...]
-        # mean_solution = np.mean(solution, axis=(0,2))
         loss = np.sum(np.square(final_state))
         grad = np.empty((len(a_initial,)))
         for i in range(len(a_initial)):
@@ -136,12 +134,10 @@ def optimize_with_pytorch(results_path):
 
         def closure():
             optimizer.zero_grad()
-            # solution_torch = torch_odeint(ode_system, initial_conditions_torch, t_torch, method='rk4')
             solution_torch = solve_with_pytorch(ode_system.a.detach().numpy(), ode_system, initial_conditions_torch)
             loss = torch.sum(torch.square(solution_torch[-n_steps_to_compute_loss:, x_to_optimize]-x_target))
             loss.backward()
             torch.nn.utils.clip_grad_norm_(ode_system.parameters(), 0.05)
-            # print('a =',ode_system.a.detach().numpy(), 'loss =', loss.item())
             return loss
         for step in range(max_nfev_optimization):
             initial_time = time.time()
@@ -214,7 +210,7 @@ def optimize_with_jax(results_path):
         # optimizer = jaxopt.GradientDescent(loss_grad_fn, value_and_grad=True, maxiter=max_nfev_optimization, tol=tol_optimization)
         # optimizer = jaxopt.NonlinearCG(loss_grad_fn, value_and_grad=True, maxiter=max_nfev_optimization)#, maxiter=max_nfev_optimization, tol=tol_optimization)
         # optimizer = jaxopt.ScipyMinimize(fun=loss_fn_jit, method='Newton-CG', tol=tol_optimization,maxiter=max_nfev_optimization, jit=True)#, options={'jac':True})
-        optimizer = jaxopt.ScipyMinimize(fun=loss_fn_jit, method='L-BFGS-B', tol=tol_optimization,maxiter=max_nfev_optimization, jit=True)#, options={'jac':True})
+        optimizer = jaxopt.ScipyMinimize(fun=loss_fn_jit, method='L-BFGS-B', tol=tol_optimization, maxiter=max_nfev_optimization, jit=True)#, options={'jac':True})
         params, state = optimizer.run(a_initial_jax)
         losses = [loss_fn_jit(a_initial),loss_fn_jit(params)]
         parameters = [a_initial, params]
