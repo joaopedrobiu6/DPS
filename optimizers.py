@@ -24,10 +24,9 @@ def optimization_function_scipy(objective, method='L-BFGS-B'):
     return minimize(objective, a_initial, jac=True, method=method, options={'maxiter': max_nfev_optimization, 'gtol':tol_optimization}, tol=tol_optimization)
 
 def save_results(losses, parameters, optimized_a, optimizer_name, results_path, time):
-
     plt.figure()
     for i in range(parameters.shape[1]):
-        plt.plot(parameters[:, i]-parameters[0, i], label=f'Param {i+1} - {parameters[0, i]:.2e}')
+        plt.plot(parameters[:, i]-parameters[0, i], label=f'Difference between a[{i}] and {parameters[0, i]:.2e}')
     plt.xlabel('Step')
     plt.ylabel('Parameter - Initial value')
     plt.title(f'{optimizer_name.capitalize()} Optimization: Parameters over steps')

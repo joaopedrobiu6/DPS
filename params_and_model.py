@@ -3,7 +3,7 @@ import numpy as np
 import jax.numpy as jnp
 
 model = 'guiding-center' # 'lorenz' or 'guiding-center'
-solver_models = ["Scipy", "JAX", "PyTorch"] # change here the solvers to compare
+solver_models = ["Scipy", "JAX"]#, "PyTorch"] # change here the solvers to compare
 label_styles = [['k-','k*'], ['r--','rx'], ['b-.','b+']]
 
 # Parameters and initial conditions
@@ -21,13 +21,13 @@ if model == 'lorenz':
     learning_rate_torch = 1.1
     learning_rate_jax = 0.2
 elif model == 'guiding-center':
-    variables = ['psi', 'theta', 'phi', 'v']
+    variables = ['psi', 'theta', 'phi', 'vparallel']
     initial_conditions = [0.4, 1.5, 0.0, -0.2]
     a_initial = [1.0, 0.9, 0.000]  # B0, B1c, B01s
     iota = 0.418
     G = 0.01
     tmin = 0
-    tmax = 10
+    tmax = 5
     nt_per_time_unit = 60
     n_steps_to_compute_loss = 30
     x_target = initial_conditions[0]
@@ -38,8 +38,8 @@ elif model == 'guiding-center':
 
 delta_jacobian_scipy = 1e-5
 tol_optimization = 1e-3
-use_scipy_torch = True
 use_scipy_jax = False
+use_scipy_torch = False
 step_optimization_verbose = True
 
 nt = int(nt_per_time_unit * (tmax - tmin))
