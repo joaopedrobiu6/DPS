@@ -16,7 +16,7 @@ from params_and_model import (ODEFunc, a_initial, tol_optimization, max_nfev_opt
                               delta_jacobian_scipy, initial_conditions, x_target, x_to_optimize,
                               learning_rate_torch, learning_rate_jax, n_steps_to_compute_loss,
                               use_scipy_torch, use_scipy_jax, step_optimization_verbose, model)
-from solver import solve_with_scipy, solve_with_pytorch, solve_with_jax
+from src.solver import solve_with_scipy, solve_with_pytorch, solve_with_jax
 num_functions = len(initial_conditions)  # assuming number of functions is the same as the length of initial conditions
 t_torch = torch.linspace(tmin, tmax, nt)
 

@@ -8,8 +8,8 @@ from jax.config import config
 config.update("jax_enable_x64", True)
 
 from params_and_model import tmin, tmax, nt, a_initial, initial_conditions, model as model_equations, solver_models, variables, label_styles
-from solver import solve_with_scipy, solve_with_pytorch, solve_with_jax
-from optimizers import optimize_with_scipy, optimize_with_pytorch, optimize_with_jax
+from src.solver import solve_with_scipy, solve_with_pytorch, solve_with_jax
+from src.optimizers import optimize_with_scipy, optimize_with_pytorch, optimize_with_jax
 
 num_functions = len(initial_conditions)
 
