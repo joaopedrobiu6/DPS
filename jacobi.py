@@ -5,7 +5,7 @@ from jax import jit, jacobian as jax_jacobian
 from scipy.integrate import solve_ivp, odeint
 from torchdiffeq import odeint as torch_odeint
 from jax.experimental.ode import odeint as jax_odeint
-from params_and_model import system, ODEFunc, initial_conditions, a_initial, tmin, tmax, nt, delta_jacobian_scipy
+from params_and_model import system, system_jax, ODEFunc, initial_conditions, a_initial, tmin, tmax, nt, delta_jacobian_scipy
 
 num_functions = len(initial_conditions)  # assuming number of functions is the same as the length of initial conditions
 
@@ -50,7 +50,7 @@ def compute_jacobian_jax():
     initial_conditions_jax = jnp.array(initial_conditions, dtype=jnp.float64)
     a_jax = jnp.array(a_initial, dtype=jnp.float64)
     t_jax = jnp.linspace(tmin, tmax, nt)
-    system_jit = jit(system)
+    system_jit = jit(system_jax)
     Jacobian_jax_fn = jax_jacobian(lambda a: jax_odeint(system_jit, initial_conditions_jax, t_jax, a)[-1])
     Jacobian_jax = Jacobian_jax_fn(a_jax)
     return Jacobian_jax

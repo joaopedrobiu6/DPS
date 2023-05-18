@@ -8,7 +8,7 @@ from jacobi import compute_jacobian_scipy, compute_jacobian_torch, compute_jacob
 from differences import compute_diff
 from params_and_model import (
     initial_conditions, tmin, tmax, nt, a_initial, model, iota, Lambda,
-    solver_models, variables, label_styles
+    solver_models, variables, label_styles, B
 )
 from jax.config import config
 config.update("jax_enable_x64", True)
@@ -38,8 +38,12 @@ def main(results_path='results'):
     for i, func in enumerate(variables):
         plt.figure()
         for w_i, label, ls in zip(w_solvers, solver_models, label_styles):
-            w_i_val = w_i[:, i].detach().numpy() if label == 'PyTorch' else w_i[:, i]
-            plt.plot(t, w_i_val, ls[0], label=f'{label} {func}')
+            w_i_val = w_i.detach().numpy() if label == 'PyTorch' else w_i
+            plt.plot(t, w_i_val[:, i], ls[0], label=f'{label} {func}')
+            if model=='guiding-center' and i==3:
+                B_val = B(a_initial, w_i_val[:, 0], w_i_val[:, 1], w_i_val[:, 2])
+                v_parallel_analytical = np.sign(w_i_val[:, 3])*np.sqrt(1 - Lambda * B_val)
+                plt.plot(t, v_parallel_analytical, ls[1], label=f'{label} {func} analytical')
         plt.xlabel('Time')
         plt.ylabel(f'{func}')
         plt.title('ODE Solutions')
@@ -74,9 +78,8 @@ def main(results_path='results'):
         plt.figure()
         for w_i, label, ls in zip(w_solvers, solver_models, label_styles):
             w_i_val = w_i.detach().numpy() if label == 'PyTorch' else w_i
-            alpha = w_i_val[:, 1] - iota * w_i_val[:, 2]
-            x = w_i_val[:, 0]
-            plt.plot(np.sqrt(x) * np.cos(alpha), np.sqrt(x) * np.sin(alpha), ls[0], label=f'{label} {func}')
+            alpha = w_i_val[:, 1]# - iota * w_i_val[:, 2]
+            plt.plot(np.sqrt(w_i_val[:, 0]) * np.cos(alpha), np.sqrt(w_i_val[:, 0]) * np.sin(alpha), ls[0], label=f'{label} {func}')
         plt.xlabel(f'sqrt(psi)*cos(alpha)')
         plt.ylabel(f'sqrt(psi)*sin(alpha)')
         plt.title('ODE Solutions')
@@ -87,36 +90,28 @@ def main(results_path='results'):
         plt.figure()
         for w_i, label, ls in zip(w_solvers, solver_models, label_styles):
             w_i_val = w_i.detach().numpy() if label == 'PyTorch' else w_i
-            x = w_i_val[:, 0]
-            y = w_i_val[:, 1]
-            z = w_i_val[:, 2]
-            if w_i_val.shape[1] == 4:
-                v_parallel = w_i_val[:, 3]
-                plt.plot(t, v_parallel, ls[0], label=f'{label} {func}')
-            B_val = a_initial[0] + a_initial[1] * np.sqrt(x) * np.cos(y) + a_initial[2] * np.sin(z)
-            v_parallel_analytical = np.sqrt(1 - Lambda * B_val)
-            plt.plot(t, v_parallel_analytical, ls[1], label=f'{label} {func} analytical')
-        plt.xlabel('Time')
-        plt.ylabel(f'v_parallel')
-        plt.title('ODE Solutions')
-        plt.legend()
-        plt.tight_layout()
-        plt.savefig(os.path.join(results_path, f'initial_solution_vparallel_{model}.png'))
-
-        plt.figure()
-        for w_i, label, ls in zip(w_solvers, solver_models, label_styles):
-            w_i_val = w_i.detach().numpy() if label == 'PyTorch' else w_i
-            x = w_i_val[:, 0]
-            y = w_i_val[:, 1]
-            z = w_i_val[:, 2]
-            B_val = a_initial[0] + a_initial[1] * np.sqrt(x) * np.cos(y) + a_initial[2] * np.sin(z)
-            plt.plot(t, B_val, ls[0], label=f'{label} {func}')
+            B_val = B(a_initial, w_i_val[:, 0], w_i_val[:, 1], w_i_val[:, 2])
+            plt.plot(t, B_val, ls[0], label=f'{label}')
         plt.xlabel('Time')
         plt.ylabel(f'B')
         plt.title('ODE Solutions')
         plt.legend()
         plt.tight_layout()
         plt.savefig(os.path.join(results_path, f'initial_solution_B_{model}.png'))
+
+        plt.figure()
+        for w_i, label, ls in zip(w_solvers, solver_models, label_styles):
+            w_i_val = w_i.detach().numpy() if label == 'PyTorch' else w_i
+            B_val = B(a_initial, w_i_val[:, 0], w_i_val[:, 1], w_i_val[:, 2])
+            energy = w_i_val[:, 3]*w_i_val[:, 3] + Lambda*B_val
+            plt.plot(t, energy, ls[0], label=f'{label}')
+            print(f'Max relative energy difference for {label}:', np.max(np.abs(energy - energy[0])/energy[0]))
+        plt.xlabel('Time')
+        plt.ylabel(f'Energy')
+        plt.title('ODE Solutions')
+        plt.legend()
+        plt.tight_layout()
+        plt.savefig(os.path.join(results_path, f'initial_solution_energy_{model}.png'))
 
 
     print(f'All plots saved to results folder {results_path}.')

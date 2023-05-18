@@ -8,7 +8,7 @@ import torch
 # import torchode as to
 from functools import partial
 from jax.experimental.ode import odeint as jax_odeint
-from params_and_model import system, ODEFunc, initial_conditions, a_initial, tmin, tmax, nt
+from params_and_model import system, system_jax, ODEFunc, initial_conditions, a_initial, tmin, tmax, nt
 
 # Solve the ODE using Scipy
 def solve_with_scipy(a=None):
@@ -47,7 +47,7 @@ def solve_with_jax(a=None):
     else:
         a_jax = jnp.array(a_initial, dtype=jnp.float64)
     t_jax = jnp.linspace(tmin, tmax, nt)
-    system_jit = jit(system)
+    system_jit = jit(system_jax)
     # solution_jax = jax_odeint(system_jit, initial_conditions_jax, t_jax, a_jax)
     solution_jax = jax_odeint(partial(system_jit, a=a_jax), initial_conditions_jax, t_jax)
     return solution_jax
