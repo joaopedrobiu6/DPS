@@ -38,8 +38,8 @@ def compute_jacobian_torch():
     solution = torch_odeint(ode_func, initial_conditions_torch, t_torch)
     
     # Compute Jacobian
-    Jacobian_torch = torch.zeros([3, 3])
-    for i in range(3):
+    Jacobian_torch = torch.zeros([len(initial_conditions), len(a_initial)])
+    for i in range(len(initial_conditions)):
         grad_params = torch.autograd.grad(solution[-1, i], ode_func.a, create_graph=True)
         Jacobian_torch[i, :] = grad_params[0]
     

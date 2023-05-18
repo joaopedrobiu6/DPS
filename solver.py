@@ -36,7 +36,7 @@ def solve_with_pytorch(a=None, odefunc:ODEFunc=None, initial_conditions_torch=No
         odefunc.a.data = a
     else:
         ode_system = ODEFunc(a)
-    solution_torch = torch_odeint(ode_system, initial_conditions_torch, t_torch, method='rk4')
+    solution_torch = torch_odeint(ode_system, initial_conditions_torch, t_torch, method='dopri5')
     return solution_torch
 
 # Solve the ODE using JAX

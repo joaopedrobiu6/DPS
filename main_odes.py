@@ -24,6 +24,8 @@ def main(results_path='results'):
         "PyTorch": (solve_with_pytorch, compute_jacobian_torch),
         "JAX": (solve_with_jax, compute_jacobian_jax)
     }
+    selected_solver_models = [model for model in solver_models if model in solver_functions]
+    solver_functions = {model: solver_functions[model] for model in selected_solver_models}
 
     solvers = [solver_functions.get(solver, (None, None))[0] for solver in solver_models]
     jacobi_computers = [solver_functions.get(solver, (None, None))[1] for solver in solver_models]
@@ -31,7 +33,7 @@ def main(results_path='results'):
     w_solvers, times_solve = zip(*[compute_and_time(solver) for solver in solvers])
     Jacobian_solvers, times_jacobi = zip(*[compute_and_time(jacobian) for jacobian in jacobi_computers])
 
-    diffs = compute_diff(solvers, jacobi_computers)
+    diffs = compute_diff(w_solvers, Jacobian_solvers, list(solver_functions.keys()))
 
     t = np.linspace(tmin, tmax, nt)
 
@@ -62,8 +64,21 @@ def main(results_path='results'):
     plt.tight_layout()
     plt.savefig(os.path.join(results_path, f'jacobians_a_{model}.png'))
 
-    fig = plt.figure()
+    plt.figure()
+    bar_width = 0.35
+    index = np.arange(len(solver_models))
+    bars1 = plt.bar(index, times_solve, bar_width, label='Solve Time')
+    bars2 = plt.bar(index + bar_width, times_jacobi, bar_width, label='Jacobian Time')
+    plt.xlabel('Library')
+    plt.ylabel('Time (s)')
+    plt.title('Time Taken for Solving ODE and Computing Jacobian')
+    plt.xticks(index + bar_width / 2, solver_models)
+    plt.legend()
+    plt.tight_layout()
+    plt.savefig(os.path.join(results_path, f'time_solve_Jacobian_{model}.png'))
+
     if model == 'lorenz':
+        fig = plt.figure()
         ax = fig.add_subplot(111, projection='3d')
         for w_i, label, ls in zip(w_solvers, solver_models, label_styles):
             w_i_val = w_i.detach().numpy() if label == 'PyTorch' else w_i
@@ -78,10 +93,9 @@ def main(results_path='results'):
         plt.figure()
         for w_i, label, ls in zip(w_solvers, solver_models, label_styles):
             w_i_val = w_i.detach().numpy() if label == 'PyTorch' else w_i
-            alpha = w_i_val[:, 1]# - iota * w_i_val[:, 2]
-            plt.plot(np.sqrt(w_i_val[:, 0]) * np.cos(alpha), np.sqrt(w_i_val[:, 0]) * np.sin(alpha), ls[0], label=f'{label} {func}')
-        plt.xlabel(f'sqrt(psi)*cos(alpha)')
-        plt.ylabel(f'sqrt(psi)*sin(alpha)')
+            plt.plot(np.sqrt(w_i_val[:, 0]) * np.cos(w_i_val[:, 1]), np.sqrt(w_i_val[:, 0]) * np.sin(w_i_val[:, 1]), ls[0], label=f'{label} {func}')
+        plt.xlabel(f'sqrt(psi)*cos(theta)')
+        plt.ylabel(f'sqrt(psi)*sin(theta)')
         plt.title('ODE Solutions')
         plt.legend()
         plt.tight_layout()
@@ -100,18 +114,27 @@ def main(results_path='results'):
         plt.savefig(os.path.join(results_path, f'initial_solution_B_{model}.png'))
 
         plt.figure()
+        relative_energy_threshold = 1e-12
         for w_i, label, ls in zip(w_solvers, solver_models, label_styles):
             w_i_val = w_i.detach().numpy() if label == 'PyTorch' else w_i
             B_val = B(a_initial, w_i_val[:, 0], w_i_val[:, 1], w_i_val[:, 2])
-            energy = w_i_val[:, 3]*w_i_val[:, 3] + Lambda*B_val
-            plt.plot(t, energy, ls[0], label=f'{label}')
-            print(f'Max relative energy difference for {label}:', np.max(np.abs(energy - energy[0])/energy[0]))
+            energy = w_i_val[:, 3] * w_i_val[:, 3] + Lambda * B_val
+            energy_diff = np.abs((energy - energy[0]) / energy[0])
+
+            filtered_indices = np.where(energy_diff > relative_energy_threshold)[0]
+            t_filtered, energy_diff_filtered = t[filtered_indices], energy_diff[filtered_indices]
+
+            plt.plot(t_filtered, energy_diff_filtered, ls[0], label=f'{label}')
+            print(f'Max relative energy difference for {label}:', np.max(energy_diff))
+
         plt.xlabel('Time')
-        plt.ylabel(f'Energy')
+        plt.ylabel('Relative Energy Error')
+        plt.yscale('log')
         plt.title('ODE Solutions')
         plt.legend()
         plt.tight_layout()
         plt.savefig(os.path.join(results_path, f'initial_solution_energy_{model}.png'))
+
 
 
     print(f'All plots saved to results folder {results_path}.')
