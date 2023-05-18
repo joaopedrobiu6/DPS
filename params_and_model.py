@@ -22,14 +22,15 @@ if model == 'lorenz':
     learning_rate_jax = 0.2
 elif model == 'guiding-center':
     variables = ['psi', 'theta', 'phi', 'vparallel']
-    initial_conditions = [0.4, 1.5, 0.0, -0.2]
-    a_initial = [1.0, 0.9, 0.000]  # B0, B1c, B01s
+    initial_conditions = [0.4, 1.5, 0.1, -0.2]
+    a_initial = [0.9, 0.03, 0.05]  # B1c, B1s, B01s
+    # a_initial = [ 0.73958918, -0.11144603, -0.08769668]
     iota = 0.418
     G = 0.01
     tmin = 0
-    tmax = 5
-    nt_per_time_unit = 60
-    n_steps_to_compute_loss = 30
+    tmax = 8
+    nt_per_time_unit = 100
+    n_steps_to_compute_loss = 40
     x_target = initial_conditions[0]
     x_to_optimize = 0 # optimize x0
     max_nfev_optimization = 20
@@ -49,31 +50,43 @@ n_steps_to_compute_loss = np.min([n_steps_to_compute_loss, nt])
 if model == 'guiding-center':
     ## Guiding-center equations for x=psi, y=theta, z=phi
     def B(a, x, y, z):
-        return a[0] + a[1] * np.sqrt(x) * np.cos(y) + a[2] * np.sin(z)
+        # return a[0] + a[1] * np.sqrt(x) * np.cos(y) + a[2] * np.sin(z)
+        return 1 + a[0] * np.sqrt(x) * np.cos(y-a[1]*z) + a[2] * np.sin(z)
     def dBdx(a, x, y, z):
-        return a[1] * np.cos(y) / (2 * np.sqrt(x))
+        # return a[1] * np.cos(y) / (2 * np.sqrt(x))
+        return a[0] * np.cos(y-a[1]*z) / (2 * np.sqrt(x))
     def dBdy(a, x, y, z):
-        return -a[1] * np.sqrt(x) * np.sin(y)
+        # return -a[1] * np.sqrt(x) * np.sin(y)
+        return -a[0] * np.sqrt(x) * np.sin(y-a[1]*z)
     def dBdz(a, x, y, z):
-        return a[2] * np.cos(z)
+        # return a[2] * np.cos(z)
+        return a[0] * a[1] * np.sqrt(x) * np.sin(y-a[1]*z) + a[2] * np.cos(z)
     
     def B_jax(a, x, y, z):
-        return a[0] + a[1] * jnp.sqrt(x) * jnp.cos(y) + a[2] * jnp.sin(z)
+        # return a[0] + a[1] * jnp.sqrt(x) * jnp.cos(y) + a[2] * jnp.sin(z)
+        return 1 + a[0] * jnp.sqrt(x) * jnp.cos(y-a[1]*z) + a[2] * jnp.sin(z)
     def dBdx_jax(a, x, y, z):
-        return a[1] * jnp.cos(y) / (2 * jnp.sqrt(x))
+        # return a[1] * jnp.cos(y) / (2 * jnp.sqrt(x))
+        return a[0] * jnp.cos(y-a[1]*z) / (2 * jnp.sqrt(x))
     def dBdy_jax(a, x, y, z):
-        return -a[1] * jnp.sqrt(x) * jnp.sin(y)
+        # return -a[1] * jnp.sqrt(x) * jnp.sin(y)
+        return -a[0] * jnp.sqrt(x) * jnp.sin(y-a[1]*z)
     def dBdz_jax(a, x, y, z):
-        return a[2] * jnp.cos(z)
+        # return a[2] * jnp.cos(z)
+        return a[0] * a[1] * jnp.sqrt(x) * jnp.sin(y-a[1]*z) + a[2] * jnp.cos(z)
     
     def B_torch(a, x, y, z):
-        return a[0] + a[1] * torch.sqrt(x) * torch.cos(y) + a[2] * torch.sin(z)
+        # return a[0] + a[1] * torch.sqrt(x) * torch.cos(y) + a[2] * torch.sin(z)
+        return 1 + a[0] * torch.sqrt(x) * torch.cos(y-a[1]*z) + a[2] * torch.sin(z)
     def dBdx_torch(a, x, y, z):
-        return a[1] * torch.cos(y) / (2 * torch.sqrt(x))
+        # return a[1] * torch.cos(y) / (2 * torch.sqrt(x))
+        return a[0] * torch.cos(y-a[1]*z) / (2 * torch.sqrt(x))
     def dBdy_torch(a, x, y, z):
-        return -a[1] * torch.sqrt(x) * torch.sin(y)
+        # return -a[1] * torch.sqrt(x) * torch.sin(y)
+        return -a[0] * torch.sqrt(x) * torch.sin(y-a[1]*z)
     def dBdz_torch(a, x, y, z):
-        return a[2] * torch.cos(z)
+        # return a[2] * torch.cos(z)
+        return a[0] * a[1] * torch.sqrt(x) * torch.sin(y-a[1]*z) + a[2] * torch.cos(z)
     
     # Lambda = mu*B0/Energy
     Lambda = (1-initial_conditions[3]**2)/B(a_initial, initial_conditions[0], initial_conditions[1], initial_conditions[2]) # 0.8
