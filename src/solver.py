@@ -10,6 +10,8 @@ from functools import partial
 from jax.experimental.ode import odeint as jax_odeint
 from params_and_model import system, system_jax, ODEFunc, initial_conditions, a_initial, tmin, tmax, nt
 
+### Could https://github.com/mathLab/PyDMD be useful?
+
 # Solve the ODE using Scipy
 def solve_with_scipy(a=None):
     t = np.linspace(tmin, tmax, nt)
