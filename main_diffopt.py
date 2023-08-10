@@ -63,6 +63,8 @@ def main(results_path='results'):
                 i_max = 3
             elif model_equations == 'guiding-center':
                 i_max = 4
+            elif model_equations == 'pendulum':
+                i_max = 2
             if i < i_max:
                 ax.plot(t, initial_solutions_val[:, i], label_styles[j][0], label=f'{model} Initial')
                 ax.plot(t, optimized_solutions_val[:, i], label_styles[j][1], label=f'{model} Optimized')

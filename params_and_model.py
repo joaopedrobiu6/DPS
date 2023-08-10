@@ -2,8 +2,8 @@ import torch
 import numpy as np
 import jax.numpy as jnp
 
-model = 'guiding-center' # 'lorenz' or 'guiding-center'
-solver_models = ["Scipy", "JAX"]#, "PyTorch"] # change here the solvers to compare
+model = 'pendulum' # 'lorenz' or 'guiding-center' or 'pendulum'
+solver_models = ["Scipy", "JAX"] #, "PyTorch"] # change here the solvers to compare
 label_styles = [['k-','k*'], ['r--','rx'], ['b-.','b+']]
 
 # Parameters and initial conditions
@@ -36,6 +36,20 @@ elif model == 'guiding-center':
     max_nfev_optimization = 20
     learning_rate_torch = 0.1
     learning_rate_jax = 0.2
+elif model == 'pendulum':
+    variables = ['x', 'v']
+    initial_conditions = [0.1, 0]
+    a_initial = [0.4, 0.36]
+    tmin = 0
+    tmax = 160
+    nt_per_time_unit = 120
+    n_steps_to_compute_loss = 70
+    x_target = 0.8
+    x_to_optimize = 0
+    max_nfev_optimization = 20
+    learning_rate_torch = 1.1
+    learning_rate_jax = 0.2
+
 
 delta_jacobian_scipy = 1e-7
 tol_optimization = 1e-2
@@ -173,3 +187,28 @@ elif model == 'lorenz':
             dydt = x * (self.a[1] - z) - y
             dzdt = x * y - self.a[2] * z
             return torch.stack([dxdt, dydt, dzdt], dim=-1)
+        
+elif model == 'pendulum':
+    def system(w, t, a):
+        x, v = w
+        dxdt = v
+        dvdt = -(a[0]+a[1]*np.cos(t))*np.sin(x)
+        return [dxdt, dvdt]
+    
+    def system_jax(w, t, a):
+        x, v = w
+        dxdt = v
+        dvdt = -(a[0]+a[1]*jnp.cos(t))*jnp.sin(x)
+        return [dxdt, dvdt]
+
+    class ODEFunc(torch.nn.Module):
+        def __init__(self, a):
+            super(ODEFunc, self).__init__()
+            self.a = torch.nn.Parameter(a.clone().detach().requires_grad_(True))
+
+        def forward(self, t, w):
+            x, v = w[..., 0], w[..., 1]
+            dxdt = v
+            dvdt = -(self.a[0] + self.a[1]*jnp.cos(t))*jnp.sin(x)
+            return torch.stack([dxdt, dvdt], dim=-1)
+
