@@ -33,16 +33,21 @@ def main(results_path='results'):
     solver_functions = {model: solver_functions[model] for model in selected_solver_models}
 
     # Separates the ODE solvers from the Jacobian calculation functions
-    solvers = [solver_functions.get(solver, (None, None))[0] for solver in solver_models]
+    # Gets the solver functions - solve_with_scipy, solve_with_pytorch, solve_with_jax 
+    solvers = [solver_functions.get(solver, (None, None))[0] for solver in solver_models] 
+    # Gets the jacobian functions - compute_jacobian_scipy, compute_jacobian_pytorch, compute_jacobian_jax
     jacobi_computers = [solver_functions.get(solver, (None, None))[1] for solver in solver_models]
-
+    
+    # Runs the solvers and jacobian calculators and unzips them
     w_solvers, times_solve = zip(*[compute_and_time(solver) for solver in solvers])
     Jacobian_solvers, times_jacobi = zip(*[compute_and_time(jacobian) for jacobian in jacobi_computers])
 
+    # ? não percebi muito bem
     diffs = compute_diff(w_solvers, Jacobian_solvers, list(solver_functions.keys()))
 
     t = np.linspace(tmin, tmax, nt)
 
+    # Plot each component of the solution in time
     for i, func in enumerate(variables):
         plt.figure()
         for w_i, label, ls in zip(w_solvers, solver_models, label_styles):
@@ -58,8 +63,9 @@ def main(results_path='results'):
         plt.legend()
         plt.tight_layout()
         plt.savefig(os.path.join(results_path, f'initial_solution_timetrace_{model}_{func}.png'))
-
     plt.figure()
+    
+    # Plot the  jacobians calculated with the different packages
     for Jacobian_i, label, ls in zip(Jacobian_solvers, solver_models, label_styles):
         for i, func in enumerate(variables):
             plt.plot(a_initial, Jacobian_i[i, :], ls[1], label=f'{label} Jacobian {func}', markersize=10)
@@ -69,8 +75,8 @@ def main(results_path='results'):
     plt.legend()
     plt.tight_layout()
     plt.savefig(os.path.join(results_path, f'jacobians_a_{model}.png'))
-
     plt.figure()
+    
     bar_width = 0.35
     index = np.arange(len(solver_models))
     bars1 = plt.bar(index, times_solve, bar_width, label='Solve Time')
