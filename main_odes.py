@@ -136,7 +136,7 @@ def main(results_path='results'):
         plt.legend()
         plt.tight_layout()
         plt.savefig(os.path.join(results_path, f'initial_solution_energy_{model}.png'))
-'''
+    '''
     elif model == "DESC":
         plt.figure()
         for w_i, label, ls in zip(w_solvers, solver_models, label_styles):
@@ -148,7 +148,8 @@ def main(results_path='results'):
         plt.legend()
         plt.tight_layout()
         plt.savefig(os.path.join(results_path, f'initial_solution_2D_{model}.png'))
-'''
+
+        '''
 
     print(f'All plots saved to results folder {results_path}.')
 
