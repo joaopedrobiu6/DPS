@@ -9,7 +9,7 @@ from desc.grid import Grid
 import desc.io
 import desc.examples
 
-model = 'DESC' # 'lorenz' or 'guiding-center' or 'pendulum' or 'DESC'
+model = 'lorenz' # or 'guiding-center' or 'pendulum' or 'DESC'
 solver_models = ["JAX"] #, "PyTorch"] # change here the solvers to compare
 label_styles = [['k-','k*'], ['r--','rx'], ['b-.','b+']]
 
@@ -57,6 +57,7 @@ elif model == 'pendulum':
     learning_rate_torch = 1.1
     learning_rate_jax = 0.2
 
+'''
 elif model == 'DESC':
 
     variables = ['psi', 'theta', 'zeta', 'vpar']
@@ -72,8 +73,7 @@ elif model == 'DESC':
     max_nfev_optimization = 20
     learning_rate_torch = 0.1
     learning_rate_jax = 0.2
-
-
+'''
 
 delta_jacobian_scipy = 1e-7
 tol_optimization = 1e-2
@@ -235,6 +235,7 @@ elif model == 'pendulum':
             dvdt = -(self.a[0] + self.a[1]*jnp.cos(t))*jnp.sin(x)
             return torch.stack([dxdt, dvdt], dim=-1)
 
+'''
 elif model == 'DESC':
     eq = desc.io.load("/home/joaobiu/DESC/desc/examples/ct32NFP4_init.h5")
     eq._iota = eq.get_profile("iota")
@@ -286,6 +287,6 @@ elif model == 'DESC':
             dxdt = v
             dvdt = -(self.a[0] + self.a[1]*jnp.cos(t))*jnp.sin(x)
             return torch.stack([dxdt, dvdt], dim=-1)
-
+'''
 
 
