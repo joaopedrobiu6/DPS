@@ -2,8 +2,15 @@ import torch
 import numpy as np
 import jax.numpy as jnp
 
-model = 'pendulum' # 'lorenz' or 'guiding-center' or 'pendulum'
-solver_models = ["Scipy", "JAX"] #, "PyTorch"] # change here the solvers to compare
+from desc.compute.utils import get_transforms, get_profiles, get_params, dot, cross
+from desc.compute import compute as compute_fun
+from desc.backend import jnp
+from desc.grid import Grid
+import desc.io
+import desc.examples
+
+model = 'DESC' # 'lorenz' or 'guiding-center' or 'pendulum' or 'DESC'
+solver_models = ["JAX"] #, "PyTorch"] # change here the solvers to compare
 label_styles = [['k-','k*'], ['r--','rx'], ['b-.','b+']]
 
 # Parameters and initial conditions
@@ -49,6 +56,23 @@ elif model == 'pendulum':
     max_nfev_optimization = 20
     learning_rate_torch = 1.1
     learning_rate_jax = 0.2
+
+elif model == 'DESC':
+
+    variables = ['psi', 'theta', 'zeta', 'vpar']
+    initial_conditions = [0.4, 1.5, 0.1, -0.2]
+    a_initial = [0.9, 0.03, 0.05, 1]  # mu, coeff1, coeff2, coeff3
+    
+    tmin = 0
+    tmax = 2
+    nt_per_time_unit = 100
+    n_steps_to_compute_loss = 40
+    x_target = initial_conditions[0]
+    x_to_optimize = 0 # optimize x0
+    max_nfev_optimization = 20
+    learning_rate_torch = 0.1
+    learning_rate_jax = 0.2
+
 
 
 delta_jacobian_scipy = 1e-7
@@ -186,8 +210,7 @@ elif model == 'lorenz':
             dxdt = self.a[0] * (y - x)
             dydt = x * (self.a[1] - z) - y
             dzdt = x * y - self.a[2] * z
-            return torch.stack([dxdt, dydt, dzdt], dim=-1)
-        
+            return torch.stack([dxdt, dydt, dzdt], dim=-1)       
 elif model == 'pendulum':
     def system(w, t, a):
         x, v = w
@@ -211,4 +234,58 @@ elif model == 'pendulum':
             dxdt = v
             dvdt = -(self.a[0] + self.a[1]*jnp.cos(t))*jnp.sin(x)
             return torch.stack([dxdt, dvdt], dim=-1)
+
+elif model == 'DESC':
+    eq = desc.io.load("/home/joaobiu/DESC/desc/examples/ct32NFP4_init.h5")
+    eq._iota = eq.get_profile("iota")
+    eq._current = None 
+
+    def system_jax(w, t, a):
+    
+        #initial conditions
+        psi, theta, zeta, vpar = w
+        
+        mu = a[0]
+
+        #obtaining data from DESC   
+        keys = ["B", "|B|", "grad(|B|)", "grad(psi)", "e^theta", "e^zeta", "G"] # etc etc, whatever terms you need
+        grid = Grid(jnp.array([psi, theta, zeta]).T, jitable=True, sort=False)
+        transforms = get_transforms(keys, eq, grid, jitable=True)
+        profiles = get_profiles(keys, eq, grid, jitable=True)
+        params = get_params(keys, eq)
+        data = compute_fun(eq, keys, params, transforms, profiles)
+        
+        
+        psidot = a[1]*(1/data["|B|"]**3)*(mu*data["|B|"] + vpar**2)*jnp.sum(jnp.cross(data["B"], data["grad(|B|)"], axis=-1) * data["grad(psi)"]) # etc etc
+        
+        
+        thetadot = a[2]*vpar/data["|B|"] * jnp.sum(data["B"] * data["e^theta"]) + (1/data["|B|"]**3)*(mu*data["|B|"] + vpar**2)*jnp.sum(jnp.cross(data["B"], data["grad(|B|)"], axis=-1) * data["e^theta"])
+        
+        
+        zetadot = a[3]*(vpar/data["|B|"]) * dot(data["B"], data["e^zeta"]) 
+        
+        b = data["B"]/data["|B|"]
+
+        teste1 = (b + (1/(vpar*data["|B|"]**3)) * (mu*data["|B|"] + vpar**2) * jnp.cross(data["B"], data["grad(|B|)"], axis=-1))
+        teste2 = data["grad(|B|)"]
+        vpardot = -mu*dot(teste1,teste2)
+        #vpardot = -mu*jnp.sum(((data["B"]/data["|B|"])+ (1/vpar*data["|B|"]**3)*(mu*data["|B|"] + vpar**2)*jnp.cross(data["B"], data["grad(|B|)"], axis=-1)) * data["grad(|B|)"])
+        
+        return jnp.array([psidot, thetadot, zetadot, vpardot]) #, zetadot, vpardot])
+    
+    def system(w, t, a):
+        system_jax(w, t, a)
+
+    class ODEFunc(torch.nn.Module):
+        def __init__(self, a):
+            super(ODEFunc, self).__init__()
+            self.a = torch.nn.Parameter(a.clone().detach().requires_grad_(True))
+
+        def forward(self, t, w):
+            x, v = w[..., 0], w[..., 1]
+            dxdt = v
+            dvdt = -(self.a[0] + self.a[1]*jnp.cos(t))*jnp.sin(x)
+            return torch.stack([dxdt, dvdt], dim=-1)
+
+
 

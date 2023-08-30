@@ -137,6 +137,17 @@ def main(results_path='results'):
         plt.tight_layout()
         plt.savefig(os.path.join(results_path, f'initial_solution_energy_{model}.png'))
 
+    elif model == "DESC":
+        plt.figure()
+        for w_i, label, ls in zip(w_solvers, solver_models, label_styles):
+            w_i_val = w_i.detach().numpy() if label == 'PyTorch' else w_i
+            plt.plot(np.sqrt(w_i_val[:, 0]) * np.cos(w_i_val[:, 1]), np.sqrt(w_i_val[:, 0]) * np.sin(w_i_val[:, 1]), ls[0], label=f'{label}')
+        plt.xlabel(f'sqrt(psi)*cos(theta)')
+        plt.ylabel(f'sqrt(psi)*sin(theta)')
+        plt.title('ODE Solutions')
+        plt.legend()
+        plt.tight_layout()
+        plt.savefig(os.path.join(results_path, f'initial_solution_2D_{model}.png'))
 
 
     print(f'All plots saved to results folder {results_path}.')
