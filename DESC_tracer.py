@@ -89,24 +89,20 @@ def system(w, t, a):
     #initial conditions
     psi, theta, zeta, vpar = w
     
-    keys = ["B", "|B|", "grad(|B|)", "grad(psi)", "e^theta", "e^zeta", "b"]
+    keys = ["B", "|B|", "grad(|B|)", "grad(psi)", "e^theta", "e^zeta", "b"] # etc etc, whatever terms you need
     grid = Grid(jnp.array([jnp.sqrt(psi), theta, zeta]).T, jitable=True, sort=False)
     transforms = get_transforms(keys, eq, grid, jitable=True)
     profiles = get_profiles(keys, eq, grid, jitable=True)
     params = get_params(keys, eq)
     data = compute_fun(eq, keys, params, transforms, profiles)
     
-    E, m_q, bound_psi = a
-    m = m_q*1.6e-19
+    mu, m_q, bound_psi = a
 
-    mu = E/(m*data["|B|"]) - (vpar**2)/(2*data["|B|"])
-    
-    aux = data["b"] + m_q*(mu/data["|B|"]**2)*jnp.cross(data["B"], data["grad(|B|)"], axis=-1)/vpar
-
+    aux = data["b"] + m_q*(mu/data["|B|"]**2) * jnp.cross(data["B"], data["grad(|B|)"], axis=-1)/vpar
     psidot = m_q*(1/(data["|B|"]**3))*(mu*data["|B|"] + vpar**2) * jnp.sum(jnp.cross(data["B"], data["grad(|B|)"], axis = -1) * data["grad(psi)"])  
     thetadot = (vpar/data["|B|"]) * jnp.sum(data["B"] * data["e^theta"]) + (m_q/(data["|B|"]**3))*(mu*data["|B|"] + vpar**2)*jnp.sum(jnp.cross(data["B"], data["grad(|B|)"], axis=-1) * data["e^theta"])
-    zetadot = (vpar/data["|B|"]) * jnp.sum(data["B"]* data["e^zeta"]) 
-    vpardot = -mu*jnp.sum(aux * data["grad(|B|)"])
+    zetadot = (vpar/data["|B|"]) * jnp.sum(data["B"] * data["e^zeta"]) 
+    vpardot = -mu*jnp.sum(aux * data["grad(|B|)"], axis=-1)
 
     return jnp.array([psidot/bound_psi, thetadot, zetadot, vpardot])
 
@@ -120,8 +116,14 @@ def solve(E_, q_, bound_psi, m_, t_i, t_f, nt_ ,psi_i, theta_i, zeta_i, vpar_i_r
     m_q = m/e_charge
 
     v_parallel = vpar_i_ratio*jnp.sqrt(2*E/m)
-    a_initial = [E, m_q, bound_psi]
+    
+    grid = Grid(jnp.array([jnp.sqrt(psi_i), theta_i, zeta_i]).T, jitable=True, sort=False)
+    data = eq.compute("|B|", grid=grid)
+
+    mu = E/(m*data["|B|"]) - (v_parallel**2)/(2*data["|B|"])
+    a_initial = [float(mu), m_q, bound_psi]
     initial_conditions = [psi_i, theta_i, zeta_i, v_parallel]
+    print(a_initial)
 
     def solve_with_jax(a=None):
         initial_conditions_jax = jnp.array(initial_conditions, dtype=jnp.float64)
@@ -131,9 +133,10 @@ def solve(E_, q_, bound_psi, m_, t_i, t_f, nt_ ,psi_i, theta_i, zeta_i, vpar_i_r
         solution_jax = jax_odeint(partial(system_jit, a=a_jax), initial_conditions_jax, t_jax)
         return solution_jax
     
-    print("\n\nSOLVING SYSTEM\n\n")
     sol = solve_with_jax()
-    return sol
+    print(sol)
+
+    return sol, mu
 
 E_ = 1
 q_= 1
@@ -145,22 +148,18 @@ nt_ = 200
 psi_i = 0.7
 theta_i = 0.2
 zeta_i = 0.2
-bound_psi = psi_at_boundary()
+bound_psi = check("psi", 1, theta_i, zeta_i)[0]
 
-f = f_ratio(B_for_f_ratio_surface(psi_i))
-vpar_i_ratio = 0.5*f
+f = f_ratio(B_for_f_ratio_surface(psi_i=psi_i))
 
-solution = solve(E_, q_, bound_psi, m_, t_i, t_f, nt_, psi_i, theta_i, zeta_i, vpar_i_ratio)
+print(psi_i, theta_i, zeta_i)
 
-plot_trajectory(solution=solution, name="trapped_particle")
-plot_quantities(t_i=t_i, t_f=t_f, nt_=nt_, solution=solution, name="trapped")
+vpar_i_ratio = 0.7*f
+print(vpar_i_ratio)
+sol, mu = solve(E_, q_, bound_psi, m_, t_i, t_f, nt_, psi_i, theta_i, zeta_i, vpar_i_ratio)
 
-# def energy(solution, nt_):
-#     grid = LinearGrid(rho=jnp.sqrt(2*jnp.pi*solution[:, 0]), theta=solution[:, 1], zeta=solution[:, 2])
-#     data = eq.compute("|B|", grid)
-#     E = np.ones(nt_)
-#     for i in range(0, nt_):
-#         E[i] = 0.5*(solution[i, 3]**2) 
+plot_trajectory(solution=sol, name="trapped_particle")
+plot_quantities(t_i=t_i, t_f=t_f, nt_=nt_, solution=sol, name="trapped")
 
 
 
