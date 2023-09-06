@@ -13,7 +13,7 @@ import time
 from desc.plotting import plot_surfaces, plot_section, plot_3d
 
 # eq = desc.examples.get("DSHAPE")
-eq = desc.io.load("equilibria/test_run.h5")
+eq = desc.io.load("../equilibria/test_run.h5")
 eq._iota = eq.get_profile("iota").to_powerseries(order=eq.L, sym=True)
 eq._current = None
 eq.solve()
@@ -43,6 +43,18 @@ def plot_quantities(t_i, t_f, nt_, solution, name):
 
     fig.savefig("results/DESC_quantities_" + name + ".png", dpi = 300)
     print("plot quantities: saved as " + "results/DESC_quantities_" + name + ".png")
+
+def plot_energy(t_i, t_f, nt_, solution, name):
+    t = jnp.linspace(t_i, t_f, nt_)
+    grid = Grid(np.vstack((np.sqrt(solution[:, 0]), solution[:, 1], solution[:, 2])).T,sort=False)
+    B_field = eq.compute("|B|", grid=grid)
+    Energy = 0.5*(sol[:, 3]**2 + 2*B_field["|B|"]*mu)*m
+    plt.plot(t, Energy)
+    plt.xlabel(r'time')
+    plt.ylabel(r'Energy')
+    plt.title("Energy Variation in Time")
+    plt.savefig("results/DESC_energy_" + name + ".png", dpi = 300)
+    print("plot energy: saved as " + "results/DESC_energy_" + name + ".png")
 
 def B_for_f_ratio_surface(psi_i):
     grid = LinearGrid(rho = np.sqrt(psi_i), M = 20, N = 20, NFP = eq.NFP)
@@ -89,31 +101,25 @@ def system(w, t, a):
     #initial conditions
     psi, theta, zeta, vpar = w
     
-    keys = ["B", "|B|", "grad(|B|)", "grad(psi)", "e^theta", "e^zeta", "b"] # etc etc, whatever terms you need
+    keys = ["B", "|B|", "grad(|B|)", "grad(psi)", "e^theta", "e^zeta", "b", "psidot", "thetadot", "zetadot", "vpardot"] # etc etc, whatever terms you need
     grid = Grid(jnp.array([jnp.sqrt(psi), theta, zeta]).T, jitable=True, sort=False)
     transforms = get_transforms(keys, eq, grid, jitable=True)
     profiles = get_profiles(keys, eq, grid, jitable=True)
     params = get_params(keys, eq)
-    data = compute_fun(eq, keys, params, transforms, profiles)
+    data = compute_fun(eq, keys, params, transforms, profiles, mu = a[0], vpar = vpar, m_q = a[1])
     
-    mu, m_q, bound_psi = a
+    psidot = data["psidot"]
+    thetadot = data["thetadot"]
+    zetadot = data["zetadot"]
+    vpardot = data["vpardot"]
 
-    aux = data["b"] + m_q*(mu/data["|B|"]**2) * jnp.cross(data["B"], data["grad(|B|)"], axis=-1)/vpar
-    psidot = m_q*(1/(data["|B|"]**3))*(mu*data["|B|"] + vpar**2) * jnp.sum(jnp.cross(data["B"], data["grad(|B|)"], axis = -1) * data["grad(psi)"])  
-    thetadot = (vpar/data["|B|"]) * jnp.sum(data["B"] * data["e^theta"]) + (m_q/(data["|B|"]**3))*(mu*data["|B|"] + vpar**2)*jnp.sum(jnp.cross(data["B"], data["grad(|B|)"], axis=-1) * data["e^theta"])
-    zetadot = (vpar/data["|B|"]) * jnp.sum(data["B"] * data["e^zeta"]) 
-    vpardot = -mu*jnp.sum(aux * data["grad(|B|)"], axis=-1)
+    return jnp.array([psidot, thetadot, zetadot, vpardot])
 
-    return jnp.array([psidot/bound_psi, thetadot, zetadot, vpardot])
-
-def solve(E_, q_, bound_psi, m_, t_i, t_f, nt_ ,psi_i, theta_i, zeta_i, vpar_i_ratio):
-    e_charge = q_*1.6e-19
-    m = m_*1.673e-27
+def solve(E, charge, m, t_i, t_f, nt_ ,psi_i, theta_i, zeta_i, vpar_i_ratio):
     tmin = t_i
     tmax = t_f
     nt = nt_
-    E = E_*3.52e6*e_charge
-    m_q = m/e_charge
+    m_q = m/charge
 
     v_parallel = vpar_i_ratio*jnp.sqrt(2*E/m)
     
@@ -121,9 +127,8 @@ def solve(E_, q_, bound_psi, m_, t_i, t_f, nt_ ,psi_i, theta_i, zeta_i, vpar_i_r
     data = eq.compute("|B|", grid=grid)
 
     mu = E/(m*data["|B|"]) - (v_parallel**2)/(2*data["|B|"])
-    a_initial = [float(mu), m_q, bound_psi]
+    a_initial = [float(mu), m_q]
     initial_conditions = [psi_i, theta_i, zeta_i, v_parallel]
-    print(a_initial)
 
     def solve_with_jax(a=None):
         initial_conditions_jax = jnp.array(initial_conditions, dtype=jnp.float64)
@@ -133,9 +138,9 @@ def solve(E_, q_, bound_psi, m_, t_i, t_f, nt_ ,psi_i, theta_i, zeta_i, vpar_i_r
         solution_jax = jax_odeint(partial(system_jit, a=a_jax), initial_conditions_jax, t_jax)
         return solution_jax
     
-    sol = solve_with_jax()
-    print(sol)
+    print("\n\nSOLVING...\n\n")
 
+    sol = solve_with_jax()
     return sol, mu
 
 E_ = 1
@@ -143,7 +148,12 @@ q_= 1
 m_ = 1
 t_i = 0 
 t_f = 0.00007
-nt_ = 200
+nt_ = 50
+
+charge = q_*1.6e-19
+m = m_*1.673e-27
+E = E_*3.52e6*charge
+m_q = m/charge
 
 psi_i = 0.7
 theta_i = 0.2
@@ -156,10 +166,9 @@ print(psi_i, theta_i, zeta_i)
 
 vpar_i_ratio = 0.7*f
 print(vpar_i_ratio)
-sol, mu = solve(E_, q_, bound_psi, m_, t_i, t_f, nt_, psi_i, theta_i, zeta_i, vpar_i_ratio)
+sol, mu = solve(E, charge, m, t_i, t_f, nt_, psi_i, theta_i, zeta_i, vpar_i_ratio)
 
 plot_trajectory(solution=sol, name="trapped_particle")
 plot_quantities(t_i=t_i, t_f=t_f, nt_=nt_, solution=sol, name="trapped")
-
-
+plot_energy(t_i, t_f, nt_, sol, "energyplot")
 
