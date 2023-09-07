@@ -23,7 +23,7 @@ def plot_trajectory(solution, name):
     plt.xlabel(r'sqrt($\psi$)*cos($\theta$)')
     plt.ylabel(r'sqrt($\psi$)*sin($\theta$)')
     plt.title(rf'E = {E_}, q/m = {q_}/{m_}, $\Delta$t = [{t_i}, {t_f}], nt = {nt_}, x$_i$ = [{psi_i:.2f}, {theta_i:.2f}, {zeta_i:.2f}], v$_\%$ = {vpar_i_ratio:.2f}')
-    plt.savefig("results/DESC_tracing_" + name + ".png", dpi = 300)
+    plt.savefig("../results/DESC_tracing_" + name + ".png", dpi = 300)
     print("plot trajectory: saved as " + "results/DESC_tracing_" + name + ".png")
 
 def plot_quantities(t_i, t_f, nt_, solution, name):
@@ -41,7 +41,7 @@ def plot_quantities(t_i, t_f, nt_, solution, name):
     fig = plt.gcf()
     fig.set_size_inches(10.5, 10.5)
 
-    fig.savefig("results/DESC_quantities_" + name + ".png", dpi = 300)
+    fig.savefig("../results/DESC_quantities_" + name + ".png", dpi = 300)
     print("plot quantities: saved as " + "results/DESC_quantities_" + name + ".png")
 
 def plot_energy(t_i, t_f, nt_, solution, name):
@@ -53,7 +53,7 @@ def plot_energy(t_i, t_f, nt_, solution, name):
     plt.xlabel(r'time')
     plt.ylabel(r'Energy')
     plt.title("Energy Variation in Time")
-    plt.savefig("results/DESC_energy_" + name + ".png", dpi = 300)
+    plt.savefig("../results/DESC_energy_" + name + ".png", dpi = 300)
     print("plot energy: saved as " + "results/DESC_energy_" + name + ".png")
 
 def B_for_f_ratio_surface(psi_i):
@@ -172,3 +172,4 @@ plot_trajectory(solution=sol, name="trapped_particle")
 plot_quantities(t_i=t_i, t_f=t_f, nt_=nt_, solution=sol, name="trapped")
 plot_energy(t_i, t_f, nt_, sol, "energyplot")
 
+print(sol.shape)
