@@ -101,7 +101,7 @@ def system(w, t, a):
     #initial conditions
     psi, theta, zeta, vpar = w
     
-    keys = ["B", "|B|", "grad(|B|)", "grad(psi)", "e^theta", "e^zeta", "b", "psidot", "thetadot", "zetadot", "vpardot"] # etc etc, whatever terms you need
+    keys = ["psidot", "thetadot", "zetadot", "vpardot"] # etc etc, whatever terms you need
     grid = Grid(jnp.array([jnp.sqrt(psi), theta, zeta]).T, jitable=True, sort=False)
     transforms = get_transforms(keys, eq, grid, jitable=True)
     profiles = get_profiles(keys, eq, grid, jitable=True)
