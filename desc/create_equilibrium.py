@@ -1,3 +1,5 @@
+from desc import set_device
+set_device("gpu")
 from desc.grid import Grid
 from desc.plotting import plot_surfaces, plot_3d
 from desc.geometry import FourierRZToroidalSurface
