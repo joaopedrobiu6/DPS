@@ -15,8 +15,9 @@ surf = FourierRZToroidalSurface(
 )
 eq = Equilibrium(M=8, N=8, Psi=0.04, surface=surf)
 eq = solve_continuation_automatic(eq, objective="force", bdry_step=0.5, verbose=3)[-1]
+eq.save("new_equilibrium.h5")
 
-plt1 = plot_surfaces(eq)
-plt1.savefig("plt1.png")
-plt2 = plot_surfaces(eq)
-plt2.savefig("plt2.png")
+fig1, ax1 = plot_surfaces(eq)
+fig1.savefig("plt1.png")
+fig2, ax2 = plot_surfaces(eq)
+fig2.savefig("plt2.png")
