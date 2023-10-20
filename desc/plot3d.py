@@ -1,7 +1,12 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import desc.io
-from desc.grid import Grid
+from desc.grid import Grid, LinearGrid
+from desc.plotting import plot_3d
+import plotly.graph_objects as go
+
+eq_file = "equilibria/input.LandremanPaul2021_QA_scaled_output.h5"
+txt_file = "trace_QA.txt"
 
 def data_input_from_file(file_name):
     # Initialize empty lists to store the separated columns
@@ -33,22 +38,20 @@ def data_input_from_file(file_name):
     
     return np.array([psi, theta, zeta, vpar]).T
 
-solution = data_input_from_file("solutioninput.LandremanPaul2021_QA_scaled_output.h5.txt")
+solution = data_input_from_file(txt_file)
+
+eq = desc.io.load(eq_file)[-1]
+eq._iota = eq.get_profile("iota").to_powerseries(order=eq.L, sym=True)
+eq._current = None
 
 #Assumindo que isto está bem feito (não sei se o Psi está certo, dá valores muito mais altos do que eu esperava)
-def boozer_to_cylindrical(eq_filename, solution=None):
-    eq = desc.io.load(eq_filename)[-1]
-    eq._iota = eq.get_profile("iota").to_powerseries(order=eq.L, sym=True)
-    eq._current = None
-
+def boozer_to_cylindrical(eq, solution=None):
     grid = Grid([1, 0, 0], sort=False)
     data = eq.compute(["Psi", "R"], grid = grid)
     Psi = data["Psi"][0]
     R = data["R"][0]
     
     solution[:, 0] = np.sqrt(solution[:, 0]*(Psi/2*np.pi)) # un-normalizing psi
-    theta = solution[:, 1]
-    zeta = solution[:, 2]
 
     cylindric = np.ndarray(shape=solution.shape)
     
@@ -57,19 +60,13 @@ def boozer_to_cylindrical(eq_filename, solution=None):
     cylindric[:, 2] = solution[:, 0]*np.sin(solution[:, 1])
     return cylindric
 
-def boozer_to_cartesian(eq_filename, solution=None):
-    eq = desc.io.load(eq_filename)[-1]
-    eq._iota = eq.get_profile("iota").to_powerseries(order=eq.L, sym=True)
-    eq._current = None
-
+def boozer_to_cartesian(eq, solution=None):
     grid = Grid([1, 0, 0], sort=False)
     data = eq.compute(["Psi", "R"], grid = grid)
     Psi = data["Psi"][0]
     R = data["R"][0]
     
-    solution[:, 0] = np.sqrt(solution[:, 0]*(Psi/2*np.pi)) # un-normalizing psi
-    theta = solution[:, 1]
-    zeta = solution[:, 2]
+    solution[:, 0] = np.sqrt(solution[:, 0]) #*(Psi/2*np.pi)) # un-normalizing psi
 
     cylindric = np.ndarray(shape=solution.shape)
     
@@ -85,18 +82,26 @@ def boozer_to_cartesian(eq_filename, solution=None):
 
     return x
 
-x = boozer_to_cartesian("input.LandremanPaul2021_QA_scaled_output.h5", solution)
+def plot_tracing_in_surface(eq, solution):
+    x = boozer_to_cartesian(eq, solution)
+    
+    fig = plot_3d(eq, "B", alpha=0.5)
+    fig.add_trace(go.Scatter3d(x=x[:, 0], y=x[:, 1], z=x[:, 2], mode='lines'))
+    fig.write_html("file.html")
+    # fig.show(renderer="browser")    
 
-ax = plt.figure().add_subplot(projection='3d')
+# ax = plt.figure().add_subplot(projection='3d')
 
 # Prepare arrays x, y, z
 
-ax.plot(x[:, 0], x[:, 1], x[:, 2])
-ax.set_xlim(-15, 15)
-ax.set_ylim(-15, 15)
-ax.set_zlim(-15, 15)
+# ax.plot(x[:, 0], x[:, 1], x[:, 2])
+# ax.set_xlim(-15, 15)
+# ax.set_ylim(-15, 15)
+# ax.set_zlim(-15, 15)
 
-plt.show()
+# plt.show()
+
+plot_tracing_in_surface(eq, solution)
 
 
 
