@@ -13,7 +13,7 @@ surf = FourierRZToroidalSurface(
     modes_Z=[[-1, 0], [0, -1]],
     NFP=4,
 )
-eq = Equilibrium(M=8, N=8, Psi=0.04, surface=surf)
+eq = Equilibrium(M=4, N=4, Psi=1, surface=surf)
 eq = solve_continuation_automatic(eq, objective="force", bdry_step=0.5, verbose=3)[-1]
 eq.save("new_equilibrium.h5")
 
